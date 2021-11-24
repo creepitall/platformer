@@ -150,19 +150,20 @@ func run() {
 		win.Clear(color.White)
 
 		sceneCenter := scene.Center()
-		for i := 1.0; i < 4.0; i++ {
+		for i := 1.0; i < 3.0; i++ {
 			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(sceneCenter.X*i, sceneCenter.Y)))
 		}
 		//sprite.Draw(win, pixel.IM.Moved(scene.Center()))
 		//sprite.Draw(win, pixel.IM.Moved(pixel.ZV))
 
-		obj := pixel.NewSprite(ss.ss, returnFrame(1))
+		// obj := pixel.NewSprite(ss.ss, returnFrame(1))
+		// createMapNew(result, obj, win)
+
 		//obj.Draw(win, pixel.IM.Moved(pixel.ZV))
 
 		////obj.Draw(win, pixel.IM.Moved(scene.Min))
 
 		//createFrame(ss.ss, scene, win)
-		createMapNew(result, obj, win)
 
 		// for i, obj := range objects {
 		// 	obj.Draw(win, matrices[i])
