@@ -17,22 +17,33 @@ var (
 	camSpeed     = 500.0
 	camZoom      = 1.5
 	camZoomSpeed = 1.5
-	// rocks    []*pixel.Sprite
-	trees []*pixel.Sprite
-	//	matrices []pixel.Matrix
-	CurrentSprite spriteSettings
 )
 
+type heroPhys struct {
+	gravity   float64
+	runSpeed  float64
+	jumpSpeed float64
+
+	rect   pixel.Rect
+	vel    pixel.Vec
+	ground bool
+}
+
+type heroAnim struct {
+	sheet pixel.Picture
+	anims []pixel.Rect
+	rate  float64
+
+	//state   animState
+	counter float64
+	dir     float64
+
+	frame pixel.Rect
+
+	sprite *pixel.Sprite
+}
+
 var ObjFrames []pixel.Rect
-
-type spriteSettings struct {
-	blockSize float64
-	scale     float64
-}
-
-type spritesheet struct {
-	ss pixel.Picture
-}
 
 func loadPicture(path string) (pixel.Picture, error) {
 	file, err := os.Open(path)
@@ -50,7 +61,7 @@ func loadPicture(path string) (pixel.Picture, error) {
 func run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Pixel Rocks!",
-		Bounds: pixel.R(0, 0, 1024, 768),
+		Bounds: pixel.R(0, 0, 960, 480),
 		VSync:  false,
 	}
 	win, err := pixelgl.NewWindow(cfg)
@@ -58,116 +69,94 @@ func run() {
 		panic(err)
 	}
 
-	CurrentSprite = spriteSettings{
-		blockSize: 32.0,
-		scale:     1.0,
-	}
-
-	assets, err := loadPicture("assets/build_3.png")
-	if err != nil {
-		panic(err)
-	}
-
-	ss := spritesheet{
-		ss: assets,
-	}
-	ss.initSprites()
-	//objects, matrices := ss.createLevel()
-
-	// spritesheet, err := loadPicture("assets/trees.png")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	//tree := pixel.NewSprite(spritesheet, pixel.R(0, 0, 32, 32))
-
-	background, err := loadPicture("assets/background3.png")
-	if err != nil {
-		panic(err)
-	}
-	sprite := pixel.NewSprite(background, background.Bounds())
-
-	//black := color.RGBA{23, 18, 23, 255}
-
 	var (
 		frames = 0
 		second = time.Tick(time.Second)
 	)
 
-	fmt.Println(pixel.V(1.0, 1.0))
+	backgroundSprites := returnBackGroundSprite()
+	assets, frontSprites := returnFrontSprite()
 
-	scene := pixel.R(30.0, 624.0, 990, 144.0)
-	result := createGrid(scene)
-	for idY, valueY := range result {
-		for idX, valueX := range valueY {
-			fmt.Printf("Y: %v X: %v coor: %v \r\n", idY, idX, valueX)
-		}
+	rock1 := pixel.NewSprite(assets, frontSprites[6])
+	rock2 := pixel.NewSprite(assets, frontSprites[7])
+
+	assetsHero, err := loadPicture("assets/KnightRun_scale.png")
+	if err != nil {
+		panic(err)
+	}
+	//hero := pixel.NewSprite(assetsHero, assetsHero.Bounds())
+
+	hp := &heroPhys{
+		gravity:   -512,
+		runSpeed:  64,
+		jumpSpeed: 192,
+		rect:      pixel.R(32, 64, 96, 128),
 	}
 
-	camPos := scene.Center()
+	hanim := &heroAnim{
+		sheet: assetsHero,
+		anims: returHeroRect(assetsHero),
+		rate:  1.0 / 10,
+		dir:   +1,
+	}
+
+	camPos := pixel.ZV
 
 	last := time.Now()
 	for !win.Closed() {
 		dt := time.Since(last).Seconds()
 		last = time.Now()
 
-		//camPos = pixel.Lerp(camPos, pixel.R(0, 0, 6, 7).Center(), 1-math.Pow(1.0/128, dt))
-		//cam := pixel.IM.Moved(win.Bounds().Center().Sub(camPos))
-		//cam := pixel.IM.Moved(camPos.Scaled(-1))
+		// cam := pixel.IM.Moved(pixel.V(0, 0))
+		// win.SetMatrix(cam)
 
-		cam := pixel.IM.Moved(win.Bounds().Center().Sub(camPos))
+		camPos = pixel.Lerp(camPos, pixel.ZV, 1-math.Pow(1.0/128, dt))
+		cam := pixel.IM.Moved(camPos.Scaled(-1))
 		win.SetMatrix(cam)
 
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
-			// objects = append(objects, tree)
-			// matrices = append(matrices, pixel.IM.Scaled(pixel.ZV, 4).Moved(win.MousePosition()))
 			fmt.Println(win.MousePosition())
 		}
 
+		ctrl := pixel.ZV
 		if win.Pressed(pixelgl.KeyLeft) {
-			//if camPos.X > 0 {
-			camPos.X -= camSpeed * dt
-			//}
+			//camPos.X -= camSpeed * dt
+			ctrl.X--
 		}
 		if win.Pressed(pixelgl.KeyRight) {
-			//if camPos.X < 960 {
-			camPos.X += camSpeed * dt
-			//}
+			//camPos.X += camSpeed * dt
+			ctrl.X++
 		}
-		if win.Pressed(pixelgl.KeyDown) {
-			//if camPos.Y > 0 {
-			camPos.Y -= camSpeed * dt
-			//}
-		}
-		if win.Pressed(pixelgl.KeyUp) {
-			//if camPos.Y < 480 {
-			camPos.Y += camSpeed * dt
-			//}
-		}
-
-		camZoom *= math.Pow(camZoomSpeed, win.MouseScroll().Y)
+		//if win.Pressed(pixelgl.KeyDown) {
+		//camPos.Y -= camSpeed * dt
+		//}
+		//if win.Pressed(pixelgl.KeyUp) {
+		//camPos.Y += camSpeed * dt
+		//}
 
 		win.Clear(color.White)
 
-		sceneCenter := scene.Center()
-		for i := 1.0; i < 3.0; i++ {
-			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(sceneCenter.X*i, sceneCenter.Y)))
+		//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(win.Bounds().Center()))
+		//fmt.Println(win.Bounds().Center())
+		for _, sprite := range backgroundSprites {
+			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(480, 240)))
 		}
-		//sprite.Draw(win, pixel.IM.Moved(scene.Center()))
-		//sprite.Draw(win, pixel.IM.Moved(pixel.ZV))
-
-		// obj := pixel.NewSprite(ss.ss, returnFrame(1))
-		// createMapNew(result, obj, win)
-
-		//obj.Draw(win, pixel.IM.Moved(pixel.ZV))
-
-		////obj.Draw(win, pixel.IM.Moved(scene.Min))
-
-		//createFrame(ss.ss, scene, win)
-
-		// for i, obj := range objects {
-		// 	obj.Draw(win, matrices[i])
+		// for _, sprite := range backgroundSprites {
+		// 	sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(480*3, 240)))
 		// }
+
+		rock1.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(32, 32)))
+		rock2.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(96, 32)))
+		rock1.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(160, 32)))
+		rock2.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(224, 32)))
+
+		hp.update(dt, ctrl)
+		hanim.update(dt, hp)
+
+		//hero.Set(ga.sheet, ga.frame)
+		//hero.Draw(win, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(hp.rect.Center()))
+
+		hanim.draw(win, hp)
 
 		win.Update()
 
@@ -185,141 +174,109 @@ func main() {
 	pixelgl.Run(run)
 }
 
-func createFrame(p pixel.Picture, scene pixel.Rect, win *pixelgl.Window) {
-	min := scene.Min
-	max := scene.Max
+func returnBackGroundSprite() []*pixel.Sprite {
+	var background pixel.Picture
+	var sprite []*pixel.Sprite
+	var err error
 
-	obj := pixel.NewSprite(p, returnFrame(1))
-
-	blockSize := CurrentSprite.blockSize * CurrentSprite.scale
-
-	for y := min.Y; y > max.Y; y -= blockSize {
-		for x := min.X; x < max.X; x += blockSize {
-			obj.Draw(win, pixel.IM.Moved(pixel.V(x+blockSize, y-blockSize)))
-		}
+	var spritesName = []string{
+		"assets/background1.png",
+		"assets/background3.png",
+		"assets/background4b.png",
 	}
 
+	for _, name := range spritesName {
+		background, err = loadPicture(name)
+		if err != nil {
+			panic(err)
+		}
+		sprite = append(sprite, pixel.NewSprite(background, background.Bounds()))
+	}
+
+	return sprite
 }
 
-func createMapNew(currentScene [][]pixel.Vec, obj *pixel.Sprite, win *pixelgl.Window) {
-	var currentMap = [15][30]int{
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 2, 1, 2, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{2, 1, 2, 1, 2, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{9, 9, 9, 9, 9, 9, 9, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 1, 2, 2},
-		{9, 9, 9, 3, 9, 9, 3, 9, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0},
-		{9, 3, 4, 9, 4, 9, 9, 9, 9, 9, 3, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0},
-		{9, 9, 9, 3, 9, 9, 9, 9, 9, 9, 9, 4, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0},
+func returnFrontSprite() (pixel.Picture, []pixel.Rect) {
+	var assets pixel.Picture
+	var ObjFrames []pixel.Rect
+
+	assets, err := loadPicture("assets/build_3.png")
+	if err != nil {
+		panic(err)
 	}
 
-	for lineId, line := range currentMap {
-		for blockId, block := range line {
-			if block != 0 {
-				obj.Draw(win, pixel.IM.Scaled(pixel.ZV, CurrentSprite.scale).Moved(currentScene[lineId][blockId]))
-			}
-		}
-	}
-}
-
-func createGrid(scene pixel.Rect) [][]pixel.Vec {
-	min := scene.Min
-	max := scene.Max
-
-	blockSize := CurrentSprite.blockSize * CurrentSprite.scale
-
-	var currentScene [][]pixel.Vec
-	for y := min.Y; y > max.Y; y -= blockSize {
-		var sceneXLine []pixel.Vec
-		for x := min.X; x < max.X; x += blockSize {
-			sceneXLine = append(sceneXLine, pixel.V(x+blockSize, y-blockSize))
-		}
-		currentScene = append(currentScene, sceneXLine)
-	}
-
-	return currentScene
-}
-
-func (s *spritesheet) createLevel() (objects []*pixel.Sprite, matrices []pixel.Matrix) {
-	// x=32, y=16
-	var currentMap = [16][32]int{
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 6, 1, 2, 1, 2, 2, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{2, 1, 2, 1, 2, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{9, 9, 9, 9, 9, 9, 9, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 2, 1, 2, 2, 2, 1},
-		{9, 9, 9, 3, 9, 9, 3, 9, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{9, 3, 4, 9, 4, 9, 9, 9, 9, 9, 3, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{9, 9, 9, 3, 9, 9, 9, 9, 9, 9, 9, 4, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-		{9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-	}
-
-	blockSize := (CurrentSprite.blockSize * CurrentSprite.scale)
-	maxY := blockSize * 12
-
-	delta := pixel.V(1, maxY) // 32x32 sprite
-
-	objects = make([]*pixel.Sprite, 0)
-	matrices = make([]pixel.Matrix, 0)
-
-	for _, line := range currentMap {
-		for blockId, block := range line {
-			a := blockSize * float64(blockId)
-			if block > 0 {
-				obj := pixel.NewSprite(s.ss, returnFrame(block))
-				objects = append(objects, obj)
-				newDelta := pixel.V(a+blockSize, delta.Y)
-				matrices = append(matrices, pixel.IM.Scaled(pixel.ZV, CurrentSprite.scale).Moved(newDelta))
-			}
-		}
-		delta = pixel.V(1, delta.Y-(blockSize))
-	}
-
-	return objects, matrices
-}
-
-func (s *spritesheet) initSprites() {
-	for y := 0.0; y < s.ss.Bounds().Max.Y; y += 32.0 {
-		for x := 0.0; x < s.ss.Bounds().Max.X; x += 32.0 {
+	for y := 0.0; y < assets.Bounds().Max.Y; y += 32.0 {
+		for x := 0.0; x < assets.Bounds().Max.X; x += 32.0 {
 			ObjFrames = append(ObjFrames, pixel.R(x, y, x+32.0, y+32.0))
 		}
 	}
+
+	return assets, ObjFrames
 }
 
-func returnFrame(vl int) pixel.Rect {
-	var returnValue pixel.Rect
-	switch vl {
-	case 1: // up one
-		returnValue = ObjFrames[6]
-	case 2: // up two
-		returnValue = ObjFrames[7]
-	case 3: // under one
-		returnValue = ObjFrames[1]
-	case 4: // under two
-		returnValue = ObjFrames[2]
-	case 5: // up left
-		returnValue = ObjFrames[3]
-	case 6: // up right
-		returnValue = ObjFrames[5]
-	case 7: // dark one
-		returnValue = ObjFrames[0]
-	case 9: // dark two
-		returnValue = ObjFrames[4]
+func returHeroRect(assets pixel.Picture) []pixel.Rect {
+	var anims []pixel.Rect
+	for x := 0.0; x < assets.Bounds().Max.X; x += 32.0 {
+		anims = append(anims, pixel.R(x, 0, x+32.0, 32))
 	}
 
-	return returnValue
+	return anims
+}
+
+func (gp *heroPhys) update(dt float64, ctrl pixel.Vec) {
+	// apply controls
+	switch {
+	case ctrl.X < 0:
+		gp.vel.X = -gp.runSpeed
+	case ctrl.X > 0:
+		gp.vel.X = +gp.runSpeed
+	default:
+		gp.vel.X = 0
+	}
+
+	// apply gravity and velocity
+	//gp.vel.Y += gp.gravity * dt
+	gp.rect = gp.rect.Moved(gp.vel.Scaled(dt))
+
+}
+
+func (ha *heroAnim) update(dt float64, phys *heroPhys) {
+	ha.counter += dt
+
+	var isRunnig bool
+	if phys.vel.Len() > 0 {
+		isRunnig = true
+	}
+
+	if isRunnig {
+		i := int(math.Floor(ha.counter / ha.rate))
+		ha.frame = ha.anims[i%len(ha.anims)]
+	} else {
+		ha.frame = ha.anims[0]
+	}
+
+	if phys.vel.X != 0 {
+		if phys.vel.X > 0 {
+			ha.dir = +1
+		} else {
+			ha.dir = -1
+		}
+	}
+}
+
+func (ha *heroAnim) draw(t pixel.Target, phys *heroPhys) {
+	if ha.sprite == nil {
+		ha.sprite = pixel.NewSprite(nil, pixel.Rect{})
+	}
+	// // draw the correct frame with the correct position and direction
+	ha.sprite.Set(ha.sheet, ha.frame)
+	//ha.sprite.Draw(t, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(phys.rect.Center()))
+	ha.sprite.Draw(t, pixel.IM.
+		ScaledXY(pixel.ZV, pixel.V(
+			phys.rect.W()/ha.sprite.Frame().W(),
+			phys.rect.H()/ha.sprite.Frame().H(),
+		)).
+		ScaledXY(pixel.ZV, pixel.V(+ha.dir, 1)).
+		Moved(phys.rect.Center()),
+	)
 }
