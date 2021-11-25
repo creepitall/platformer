@@ -45,6 +45,10 @@ type heroAnim struct {
 
 var ObjFrames []pixel.Rect
 
+var CurrentHeroPhysics *heroPhys
+
+var CurrentHeroAnimation *heroAnim
+
 func loadPicture(path string) (pixel.Picture, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -56,6 +60,23 @@ func loadPicture(path string) (pixel.Picture, error) {
 		return nil, err
 	}
 	return pixel.PictureDataFromImage(img), nil
+}
+
+// for test
+func initHeroPlayer(assetsHero pixel.Picture) {
+	CurrentHeroPhysics = &heroPhys{
+		gravity:   -512,
+		runSpeed:  96,
+		jumpSpeed: 192,
+		rect:      pixel.R(32, 64, 96, 128),
+	}
+
+	CurrentHeroAnimation = &heroAnim{
+		sheet: assetsHero,
+		anims: returHeroRect(assetsHero),
+		rate:  1.0 / 10,
+		dir:   +1,
+	}
 }
 
 func run() {
@@ -86,19 +107,9 @@ func run() {
 	}
 	//hero := pixel.NewSprite(assetsHero, assetsHero.Bounds())
 
-	hp := &heroPhys{
-		gravity:   -512,
-		runSpeed:  64,
-		jumpSpeed: 192,
-		rect:      pixel.R(32, 64, 96, 128),
-	}
 
-	hanim := &heroAnim{
-		sheet: assetsHero,
-		anims: returHeroRect(assetsHero),
-		rate:  1.0 / 10,
-		dir:   +1,
-	}
+	initHeroPlayer(assetsHero)
+
 
 	camPos := pixel.ZV
 
@@ -118,6 +129,10 @@ func run() {
 			fmt.Println(win.MousePosition())
 		}
 
+		if win.JustPressed(pixelgl.KeyR) {
+			initHeroPlayer(assetsHero)
+		}
+
 		ctrl := pixel.ZV
 		if win.Pressed(pixelgl.KeyLeft) {
 			//camPos.X -= camSpeed * dt
@@ -127,12 +142,9 @@ func run() {
 			//camPos.X += camSpeed * dt
 			ctrl.X++
 		}
-		//if win.Pressed(pixelgl.KeyDown) {
-		//camPos.Y -= camSpeed * dt
-		//}
-		//if win.Pressed(pixelgl.KeyUp) {
-		//camPos.Y += camSpeed * dt
-		//}
+		if win.JustPressed(pixelgl.KeyUp) {
+			ctrl.Y = 1
+		}
 
 		win.Clear(color.White)
 
@@ -150,13 +162,13 @@ func run() {
 		rock1.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(160, 32)))
 		rock2.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(224, 32)))
 
-		hp.update(dt, ctrl)
-		hanim.update(dt, hp)
+		CurrentHeroPhysics.update(dt, ctrl)
+		CurrentHeroAnimation.update(dt, CurrentHeroPhysics)
 
 		//hero.Set(ga.sheet, ga.frame)
 		//hero.Draw(win, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(hp.rect.Center()))
 
-		hanim.draw(win, hp)
+		CurrentHeroAnimation.draw(win, CurrentHeroPhysics)
 
 		win.Update()
 
@@ -223,36 +235,62 @@ func returHeroRect(assets pixel.Picture) []pixel.Rect {
 	return anims
 }
 
-func (gp *heroPhys) update(dt float64, ctrl pixel.Vec) {
+func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 	// apply controls
 	switch {
 	case ctrl.X < 0:
-		gp.vel.X = -gp.runSpeed
+		hp.vel.X = -hp.runSpeed
 	case ctrl.X > 0:
-		gp.vel.X = +gp.runSpeed
+		hp.vel.X = +hp.runSpeed
 	default:
-		gp.vel.X = 0
+		hp.vel.X = 0
+	}
+	// platform --
+	//hp.ground = false
+
+	hp.vel.Y += hp.gravity * dt
+	hp.rect = hp.rect.Moved(hp.vel.Scaled(dt))
+
+	hp.ground = false
+	if hp.vel.Y <= 0 {
+		if ((hp.rect.Max.X + hp.rect.Min.X) / 2) <= 265 {
+			hp.ground = true
+		}
+
+		if hp.ground {
+			if hp.rect.Max.Y < 128 {
+				hp.rect = hp.rect.Moved(pixel.V(0, 64-hp.rect.Min.Y))
+				hp.vel.Y = 0
+			}
+		}
 	}
 
-	// apply gravity and velocity
-	//gp.vel.Y += gp.gravity * dt
-	gp.rect = gp.rect.Moved(gp.vel.Scaled(dt))
+
+	if ctrl.Y > 0 {
+		hp.vel.Y = hp.jumpSpeed
+	}
 
 }
 
 func (ha *heroAnim) update(dt float64, phys *heroPhys) {
 	ha.counter += dt
 
-	var isRunnig bool
+	var state string = "staying"
 	if phys.vel.Len() > 0 {
-		isRunnig = true
+		state = "running"
 	}
+	//if !phys.ground {
+	//	state = "jumping"
+	//}
 
-	if isRunnig {
+	switch state {
+	case "staying":
+		ha.frame = ha.anims[0]
+	case "running":
 		i := int(math.Floor(ha.counter / ha.rate))
 		ha.frame = ha.anims[i%len(ha.anims)]
-	} else {
-		ha.frame = ha.anims[0]
+	case "jumping":
+
 	}
 
 	if phys.vel.X != 0 {
