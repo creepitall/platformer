@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/faiface/pixel/text"
+	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 	"image"
 	"image/color"
 	_ "image/png"
@@ -23,6 +26,7 @@ type heroPhys struct {
 	gravity   float64
 	runSpeed  float64
 	jumpSpeed float64
+	isDeath bool
 
 	rect   pixel.Rect
 	vel    pixel.Vec
@@ -69,6 +73,7 @@ func initHeroPlayer(assetsHero pixel.Picture) {
 		runSpeed:  96,
 		jumpSpeed: 192,
 		rect:      pixel.R(32, 64, 96, 128),
+		isDeath:   false,
 	}
 
 	CurrentHeroAnimation = &heroAnim{
@@ -110,6 +115,13 @@ func run() {
 
 	initHeroPlayer(assetsHero)
 
+	///
+	basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	basicTxt := text.New(pixel.V(480, 240), basicAtlas)
+
+	fmt.Fprintf(basicTxt, "dead status: %v", CurrentHeroPhysics.isDeath)
+	///
+
 
 	camPos := pixel.ZV
 
@@ -125,6 +137,11 @@ func run() {
 		camPos = pixel.Lerp(camPos, pixel.ZV, 1-math.Pow(1.0/128, dt))
 		cam := pixel.IM.Moved(camPos.Scaled(-1))
 		win.SetMatrix(cam)
+
+		if CurrentHeroPhysics.isDeath {
+			//time.Sleep(2*time.Second)
+			initHeroPlayer(assetsHero)
+		}
 
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
 			fmt.Println(win.MousePosition())
@@ -148,6 +165,9 @@ func run() {
 		}
 
 		win.Clear(color.White)
+
+		basicTxt.Color = colornames.Whitesmoke
+		basicTxt.Draw(win, pixel.IM.Scaled(basicTxt.Orig, 2))
 
 		//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(win.Bounds().Center()))
 		//fmt.Println(win.Bounds().Center())
@@ -254,7 +274,7 @@ func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 
 	hp.ground = false
 	if hp.vel.Y <= 0 {
-		if ((hp.rect.Max.X + hp.rect.Min.X) / 2) <= 265 {
+		if ((hp.rect.Max.X + hp.rect.Min.X) / 2) <= 265 && hp.rect.Min.Y >= 32{
 			hp.ground = true
 		}
 
@@ -266,9 +286,12 @@ func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 		}
 	}
 
-
 	if ctrl.Y > 0 {
 		hp.vel.Y = hp.jumpSpeed
+	}
+
+	if hp.rect.Max.Y < 0 {
+		hp.isDeath = true
 	}
 
 }
