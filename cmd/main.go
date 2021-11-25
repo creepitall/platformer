@@ -2,15 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/faiface/pixel/text"
-	"golang.org/x/image/colornames"
-	"golang.org/x/image/font/basicfont"
-	"image"
 	"image/color"
 	_ "image/png"
 	"math"
-	"os"
 	"time"
+
+	"github.com/creepitall/test_pixel/internal/image"
+	"github.com/creepitall/test_pixel/internal/models"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -26,7 +24,8 @@ type heroPhys struct {
 	gravity   float64
 	runSpeed  float64
 	jumpSpeed float64
-	isDeath bool
+	isDeath   bool
+	isJump    bool
 
 	rect   pixel.Rect
 	vel    pixel.Vec
@@ -35,8 +34,8 @@ type heroPhys struct {
 
 type heroAnim struct {
 	sheet pixel.Picture
-	anims []pixel.Rect
-	rate  float64
+	//	anims []pixel.Rect
+	rate float64
 
 	//state   animState
 	counter float64
@@ -53,40 +52,9 @@ var CurrentHeroPhysics *heroPhys
 
 var CurrentHeroAnimation *heroAnim
 
-func loadPicture(path string) (pixel.Picture, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-	return pixel.PictureDataFromImage(img), nil
-}
-
-// for test
-func initHeroPlayer(assetsHero pixel.Picture) {
-	CurrentHeroPhysics = &heroPhys{
-		gravity:   -512,
-		runSpeed:  96,
-		jumpSpeed: 192,
-		rect:      pixel.R(32, 64, 96, 128),
-		isDeath:   false,
-	}
-
-	CurrentHeroAnimation = &heroAnim{
-		sheet: assetsHero,
-		anims: returHeroRect(assetsHero),
-		rate:  1.0 / 10,
-		dir:   +1,
-	}
-}
-
 func run() {
 	cfg := pixelgl.WindowConfig{
-		Title:  "Pixel Rocks!",
+		Title:  "little story: the knight",
 		Bounds: pixel.R(0, 0, 960, 480),
 		VSync:  false,
 	}
@@ -100,47 +68,32 @@ func run() {
 		second = time.Tick(time.Second)
 	)
 
-	backgroundSprites := returnBackGroundSprite()
-	assets, frontSprites := returnFrontSprite()
-
-	rock1 := pixel.NewSprite(assets, frontSprites[6])
-	rock2 := pixel.NewSprite(assets, frontSprites[7])
-
-	assetsHero, err := loadPicture("assets/KnightRun_scale.png")
-	if err != nil {
-		panic(err)
-	}
-	//hero := pixel.NewSprite(assetsHero, assetsHero.Bounds())
-
-
-	initHeroPlayer(assetsHero)
+	rock1 := models.SceneSprites["front"][6]
+	rock2 := models.SceneSprites["front"][7]
 
 	///
-	basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
-	basicTxt := text.New(pixel.V(480, 240), basicAtlas)
+	// basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	// basicTxt := text.New(pixel.V(800, 470), basicAtlas)
 
-	fmt.Fprintf(basicTxt, "dead status: %v", CurrentHeroPhysics.isDeath)
+	// fmt.Fprintf(basicTxt, "dead status: %v \r\n", CurrentHeroPhysics.isDeath)
+	// fmt.Fprintf(basicTxt, "jump status: %v", CurrentHeroPhysics.isJump)
 	///
-
 
 	camPos := pixel.ZV
 
 	last := time.Now()
 	for !win.Closed() {
-		time.Sleep(1*time.Second/60) // fix to 60 fps
+		time.Sleep(1 * time.Second / 60) // fix to 60 fps
 		dt := time.Since(last).Seconds()
 		last = time.Now()
-
-		// cam := pixel.IM.Moved(pixel.V(0, 0))
-		// win.SetMatrix(cam)
 
 		camPos = pixel.Lerp(camPos, pixel.ZV, 1-math.Pow(1.0/128, dt))
 		cam := pixel.IM.Moved(camPos.Scaled(-1))
 		win.SetMatrix(cam)
 
 		if CurrentHeroPhysics.isDeath {
-			//time.Sleep(2*time.Second)
-			initHeroPlayer(assetsHero)
+			time.Sleep(1 * time.Second)
+			initHeroPlayer()
 		}
 
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
@@ -148,7 +101,7 @@ func run() {
 		}
 
 		if win.JustPressed(pixelgl.KeyR) {
-			initHeroPlayer(assetsHero)
+			initHeroPlayer()
 		}
 
 		ctrl := pixel.ZV
@@ -166,17 +119,9 @@ func run() {
 
 		win.Clear(color.White)
 
-		basicTxt.Color = colornames.Whitesmoke
-		basicTxt.Draw(win, pixel.IM.Scaled(basicTxt.Orig, 2))
-
-		//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(win.Bounds().Center()))
-		//fmt.Println(win.Bounds().Center())
-		for _, sprite := range backgroundSprites {
+		for _, sprite := range models.SceneSprites["back"] {
 			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(480, 240)))
 		}
-		// for _, sprite := range backgroundSprites {
-		// 	sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(480*3, 240)))
-		// }
 
 		rock1.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(32, 32)))
 		rock2.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(96, 32)))
@@ -191,6 +136,9 @@ func run() {
 
 		CurrentHeroAnimation.draw(win, CurrentHeroPhysics)
 
+		// basicTxt.Color = colornames.Whitesmoke
+		// basicTxt.Draw(win, pixel.IM.Scaled(basicTxt.Orig, 1))
+
 		win.Update()
 
 		frames++
@@ -204,56 +152,33 @@ func run() {
 }
 
 func main() {
+	initGameConfig()
+	initHeroPlayer()
 	pixelgl.Run(run)
 }
 
-func returnBackGroundSprite() []*pixel.Sprite {
-	var background pixel.Picture
-	var sprite []*pixel.Sprite
-	var err error
+func initGameConfig() {
+	models.CurrentScene = "start"
 
-	var spritesName = []string{
-		"assets/background1.png",
-		"assets/background3.png",
-		"assets/background4b.png",
-	}
-
-	for _, name := range spritesName {
-		background, err = loadPicture(name)
-		if err != nil {
-			panic(err)
-		}
-		sprite = append(sprite, pixel.NewSprite(background, background.Bounds()))
-	}
-
-	return sprite
+	image.FillFrontSpriteByScene()
+	image.FillHeroPlayerSprite()
 }
 
-func returnFrontSprite() (pixel.Picture, []pixel.Rect) {
-	var assets pixel.Picture
-	var ObjFrames []pixel.Rect
-
-	assets, err := loadPicture("assets/build_3.png")
-	if err != nil {
-		panic(err)
+func initHeroPlayer() {
+	CurrentHeroPhysics = &heroPhys{
+		gravity:   -512,
+		runSpeed:  96,
+		jumpSpeed: 192,
+		rect:      pixel.R(32, 64, 96, 128),
+		isDeath:   false,
 	}
 
-	for y := 0.0; y < assets.Bounds().Max.Y; y += 32.0 {
-		for x := 0.0; x < assets.Bounds().Max.X; x += 32.0 {
-			ObjFrames = append(ObjFrames, pixel.R(x, y, x+32.0, y+32.0))
-		}
+	CurrentHeroAnimation = &heroAnim{
+		sheet: models.HeroPlayerStayAssets,
+		//	anims: returHeroRect(assetsHero),
+		rate: 1.0 / 10,
+		dir:  +1,
 	}
-
-	return assets, ObjFrames
-}
-
-func returHeroRect(assets pixel.Picture) []pixel.Rect {
-	var anims []pixel.Rect
-	for x := 0.0; x < assets.Bounds().Max.X; x += 32.0 {
-		anims = append(anims, pixel.R(x, 0, x+32.0, 32))
-	}
-
-	return anims
 }
 
 func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
@@ -274,7 +199,7 @@ func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 
 	hp.ground = false
 	if hp.vel.Y <= 0 {
-		if ((hp.rect.Max.X + hp.rect.Min.X) / 2) <= 265 && hp.rect.Min.Y >= 32{
+		if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 265 && hp.rect.Min.Y >= 32 {
 			hp.ground = true
 		}
 
@@ -282,12 +207,14 @@ func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 			if hp.rect.Max.Y < 128 {
 				hp.rect = hp.rect.Moved(pixel.V(0, 64-hp.rect.Min.Y))
 				hp.vel.Y = 0
+				hp.isJump = false
 			}
 		}
 	}
 
-	if ctrl.Y > 0 {
+	if !hp.isJump && ctrl.Y > 0 {
 		hp.vel.Y = hp.jumpSpeed
+		hp.isJump = true
 	}
 
 	if hp.rect.Max.Y < 0 {
@@ -303,18 +230,31 @@ func (ha *heroAnim) update(dt float64, phys *heroPhys) {
 	if phys.vel.Len() > 0 {
 		state = "running"
 	}
-	//if !phys.ground {
-	//	state = "jumping"
-	//}
+	if phys.isJump {
+		state = "jumping"
+	}
 
+	//i := int(math.Floor(ha.counter / ha.rate))
 	switch state {
 	case "staying":
-		ha.frame = ha.anims[0]
+		i := int(math.Floor(ha.counter / ha.rate))
+		ha.sheet = models.HeroPlayerStayAssets
+		ha.frame = models.HeroPlayerStayFrames[i%len(models.HeroPlayerStayFrames)]
 	case "running":
 		i := int(math.Floor(ha.counter / ha.rate))
-		ha.frame = ha.anims[i%len(ha.anims)]
+		ha.sheet = models.HeroPlayerRunAssets
+		ha.frame = models.HeroPlayerRunFrames[i%len(models.HeroPlayerRunFrames)]
 	case "jumping":
-
+		ha.sheet = models.HeroPlayerJumpAssets
+		speed := phys.vel.Y
+		i := int((-speed/phys.jumpSpeed + 1) / 2 * float64(len(models.HeroPlayerJumpFrames)))
+		if i < 0 {
+			i = 0
+		}
+		if i >= len(models.HeroPlayerJumpFrames) {
+			i = len(models.HeroPlayerJumpFrames) - 1
+		}
+		ha.frame = models.HeroPlayerJumpFrames[i]
 	}
 
 	if phys.vel.X != 0 {
@@ -330,9 +270,8 @@ func (ha *heroAnim) draw(t pixel.Target, phys *heroPhys) {
 	if ha.sprite == nil {
 		ha.sprite = pixel.NewSprite(nil, pixel.Rect{})
 	}
-	// // draw the correct frame with the correct position and direction
+	// draw the correct frame with the correct position and direction
 	ha.sprite.Set(ha.sheet, ha.frame)
-	//ha.sprite.Draw(t, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(phys.rect.Center()))
 	ha.sprite.Draw(t, pixel.IM.
 		ScaledXY(pixel.ZV, pixel.V(
 			phys.rect.W()/ha.sprite.Frame().W(),
