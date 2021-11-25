@@ -115,6 +115,7 @@ func run() {
 
 	last := time.Now()
 	for !win.Closed() {
+		time.Sleep(1*time.Second/60) // fix to 60 fps
 		dt := time.Since(last).Seconds()
 		last = time.Now()
 
