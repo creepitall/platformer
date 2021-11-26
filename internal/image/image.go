@@ -3,6 +3,7 @@ package image
 import (
 	"image"
 	"os"
+	"path/filepath"
 
 	"github.com/creepitall/test_pixel/internal/models"
 	"github.com/faiface/pixel"
@@ -33,9 +34,9 @@ func loadPicture(path string) (pixel.Picture, error) {
 
 func FillHeroPlayerSprite() {
 	spritePath := []heroPlayerSpritePath{
-		{name: "running", path: ".../../../assets/KnightRun_scale.png"},
-		{name: "staying", path: ".../../../assets/KnightIdle_scale.png"},
-		{name: "jumping", path: ".../../../assets/KnightJump_scale.png"},
+		{name: "running", path: filepath.FromSlash("assets/KnightRun_scale.png")},
+		{name: "staying", path: filepath.FromSlash("assets/KnightIdle_scale.png")},
+		{name: "jumping", path: filepath.FromSlash("assets/KnightJump_scale.png")},
 	}
 
 	for _, sprite := range spritePath {
@@ -78,8 +79,9 @@ func FillFrontSpriteByScene() {
 }
 
 func returnStartSceneAssets_Front() []*pixel.Sprite {
+	// ../../../
 	spritePath := []frontLayerSpritePath{
-		{name: "front", path: ".../../../assets/build_3.png"},
+		{name: "front", path: filepath.FromSlash("assets/build_3.png")},
 	}
 
 	sprites := make([]*pixel.Sprite, 0)
@@ -101,9 +103,9 @@ func returnStartSceneAssets_Front() []*pixel.Sprite {
 
 func returnStartSceneAssets_Background() []*pixel.Sprite {
 	spritePath := []frontLayerSpritePath{
-		{name: "back", path: ".../../../assets/background1.png"},
-		{name: "back", path: ".../../../assets/background3.png"},
-		{name: "back", path: ".../../../assets/background4b.png"},
+		{name: "back", path: filepath.FromSlash("assets/background1.png")},
+		{name: "back", path: filepath.FromSlash("assets/background3.png")},
+		{name: "back", path: filepath.FromSlash("assets/background4b.png")},
 	}
 
 	sprites := make([]*pixel.Sprite, 0)

@@ -92,7 +92,7 @@ func run() {
 		win.SetMatrix(cam)
 
 		if CurrentHeroPhysics.isDeath {
-			time.Sleep(1 * time.Second)
+			//time.Sleep(1 * time.Second)
 			initHeroPlayer()
 		}
 
@@ -171,6 +171,7 @@ func initHeroPlayer() {
 		jumpSpeed: 192,
 		rect:      pixel.R(32, 64, 96, 128),
 		isDeath:   false,
+		isJump:    false,
 	}
 
 	CurrentHeroAnimation = &heroAnim{
