@@ -3,9 +3,8 @@ package image
 import (
 	"image"
 	"os"
-	"path/filepath"
 
-	"github.com/creepitall/test_pixel/internal/models"
+	"github.com/creepitall/test_pixel/internal/domain"
 	"github.com/faiface/pixel"
 )
 
@@ -34,9 +33,9 @@ func loadPicture(path string) (pixel.Picture, error) {
 
 func FillHeroPlayerSprite() {
 	spritePath := []heroPlayerSpritePath{
-		{name: "running", path: filepath.FromSlash("assets/KnightRun_scale.png")},
-		{name: "staying", path: filepath.FromSlash("assets/KnightIdle_scale.png")},
-		{name: "jumping", path: filepath.FromSlash("assets/KnightJump_scale.png")},
+		{name: "running", path: domain.ReturnFilePath("assets/KnightRun_scale.png")},
+		{name: "staying", path: domain.ReturnFilePath("assets/KnightIdle_scale.png")},
+		{name: "jumping", path: domain.ReturnFilePath("assets/KnightJump_scale.png")},
 	}
 
 	for _, sprite := range spritePath {
@@ -48,18 +47,18 @@ func FillHeroPlayerSprite() {
 		switch sprite.name {
 		case "running":
 			{
-				models.HeroPlayerRunAssets = assets
-				models.HeroPlayerRunFrames = returnFrames(assets, 32.0, 32.0)
+				domain.HeroPlayerRunAssets = assets
+				domain.HeroPlayerRunFrames = returnFrames(assets, 32.0, 32.0)
 			}
 		case "staying":
 			{
-				models.HeroPlayerStayAssets = assets
-				models.HeroPlayerStayFrames = returnFrames(assets, 32.0, 32.0)
+				domain.HeroPlayerStayAssets = assets
+				domain.HeroPlayerStayFrames = returnFrames(assets, 32.0, 32.0)
 			}
 		case "jumping":
 			{
-				models.HeroPlayerJumpAssets = assets
-				models.HeroPlayerJumpFrames = returnFrames(assets, 32.0, 32.0)
+				domain.HeroPlayerJumpAssets = assets
+				domain.HeroPlayerJumpFrames = returnFrames(assets, 32.0, 32.0)
 			}
 		}
 
@@ -67,21 +66,22 @@ func FillHeroPlayerSprite() {
 }
 
 func FillFrontSpriteByScene() {
-	models.SceneSprites = make(map[string][]*pixel.Sprite)
-	switch models.CurrentScene {
+	domain.SceneSprites = make(map[string][]*pixel.Sprite)
+	switch domain.CurrentScene {
 	case "start":
 		{
-			models.SceneSprites["front"] = returnStartSceneAssets_Front()
-			models.SceneSprites["back"] = returnStartSceneAssets_Background()
+			domain.SceneSprites["front"] = returnStartSceneAssets_Front()
+			domain.SceneSprites["back"] = returnStartSceneAssets_Background()
 		}
 
 	}
 }
 
 func returnStartSceneAssets_Front() []*pixel.Sprite {
-	// ../../../
+	//
 	spritePath := []frontLayerSpritePath{
-		{name: "front", path: filepath.FromSlash("assets/build_3.png")},
+		//{name: "front_frames", path: domain.ReturnFilePath("assets/build_3.png")},
+		{name: "front", path: domain.ReturnFilePath("assets/test1.png")},
 	}
 
 	sprites := make([]*pixel.Sprite, 0)
@@ -91,11 +91,12 @@ func returnStartSceneAssets_Front() []*pixel.Sprite {
 			panic(err)
 		}
 
-		frames := returnFrames(assets, 32.0, 32.0)
+		// frames := returnFrames(assets, 32.0, 32.0)
 
-		for _, frameValue := range frames {
-			sprites = append(sprites, pixel.NewSprite(assets, frameValue))
-		}
+		// for _, frameValue := range frames {
+		// 	sprites = append(sprites, pixel.NewSprite(assets, frameValue))
+		// }
+		sprites = append(sprites, pixel.NewSprite(assets, assets.Bounds()))
 	}
 
 	return sprites
@@ -103,9 +104,9 @@ func returnStartSceneAssets_Front() []*pixel.Sprite {
 
 func returnStartSceneAssets_Background() []*pixel.Sprite {
 	spritePath := []frontLayerSpritePath{
-		{name: "back", path: filepath.FromSlash("assets/background1.png")},
-		{name: "back", path: filepath.FromSlash("assets/background3.png")},
-		{name: "back", path: filepath.FromSlash("assets/background4b.png")},
+		{name: "back", path: domain.ReturnFilePath("assets/background1.png")},
+		{name: "back", path: domain.ReturnFilePath("assets/background3.png")},
+		{name: "back", path: domain.ReturnFilePath("assets/background4b.png")},
 	}
 
 	sprites := make([]*pixel.Sprite, 0)

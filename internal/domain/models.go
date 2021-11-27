@@ -1,6 +1,10 @@
-package models
+package domain
 
-import "github.com/faiface/pixel"
+import (
+	"runtime"
+
+	"github.com/faiface/pixel"
+)
 
 var DefaultSprites map[string]*pixel.Sprite
 
@@ -19,3 +23,12 @@ var (
 	HeroPlayerStayAssets pixel.Picture
 	HeroPlayerJumpAssets pixel.Picture
 )
+
+// it's bag or not?
+func ReturnFilePath(fp string) string {
+	var path string
+	if runtime.GOOS == "windows" {
+		path += ".../../../"
+	}
+	return path + fp
+}

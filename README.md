@@ -10,6 +10,11 @@ https://youtu.be/7F_CLXefEw4
 
 ---
 
+27/11/21
+- fix character camera
+- add screen metrics
+- add new front layer
+
 26/11/21
 - animation run, idle, jump (jump is have some lags)
 - fix FPS (limit with 60 FPS)
