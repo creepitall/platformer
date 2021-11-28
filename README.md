@@ -6,9 +6,15 @@ master **ISN'T** actual branch
 
 ---
 Current video demo:
-https://youtu.be/7F_CLXefEw4
+https://youtu.be/OGulTJXcpyg
 
 ---
+
+28/11/21
+- fix character camera (in height)
+- fix character movement outside the screen 
+- add screen metrics (rectangle highlights for physical object)
+- add physical objects
 
 27/11/21
 - fix character camera

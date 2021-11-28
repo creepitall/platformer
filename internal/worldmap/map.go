@@ -1,61 +1,70 @@
 package worldmap
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/creepitall/test_pixel/internal/domain"
 	tmx "github.com/creepitall/test_pixel/internal/pkg/tmx"
 )
 
+var currentScenePhys []frontObjectPhys
 
 type levelSettings struct {
-	width int
-	height int
-	tileWidth int
+	width      int
+	height     int
+	tileWidth  int
 	tileHeight int
-	layers layerSettings
 }
 
-type layerSettings {
-	idTles int	
-	isEmpty true
-	vec coor
+type frontObjectPhys struct {
+	Min coor
+	Max coor
 }
 
 type coor struct {
-	x, y float64
+	X, Y float64
 }
 
-func CreateNewMap() {
+func CreateNewMap() []frontObjectPhys {
 	levelmap, err := tmx.ReadFile(domain.ReturnFilePath("assets/start.tmx"))
 	if err != nil {
-		panic(err)	
+		panic(err)
 	}
+	decodeMap(levelmap)
+
+	return currentScenePhys
 }
 
-// Подсчет Y идет сверху вниз 
+// Подсчет Y идет сверху вниз
 // Подсчет X идет слева направо
+// Координата нижнего левого угла - 0,0
+// верхнего - 0,1344
 func decodeMap(levelmap *tmx.Map) {
-	ls := levelSettings {
-		width: levelmap.Width,
-		height: levelmap.height,
-		tileWidth: levelmap.TileWidth,
+	ls := levelSettings{
+		width:      levelmap.TileWidth * levelmap.Width,
+		height:     levelmap.TileHeight * levelmap.Height,
+		tileWidth:  levelmap.TileWidth,
 		tileHeight: levelmap.TileHeight,
 	}
 
-	var w, h int = 1, 1
-	for id, layer := range levelmap.Layers {
-		с := coor {
-			x: w * float64(ls.tileWidth),
-			y: y * float64(ls.tileHeight),
+	currentScenePhys = make([]frontObjectPhys, 0)
+	for _, mapObjectsGr := range levelmap.ObjectGroups {
+		for _, object := range mapObjectsGr.Objects {
+
+			min := coor{
+				X: float64(object.X),
+				Y: float64(ls.height) - float64(object.Y),
+			}
+			max := coor{
+				X: min.X + float64(object.Width),
+				Y: min.Y - float64(object.Height),
+			}
+
+			fop := frontObjectPhys{
+				Min: min,
+				Max: max,
+			}
+
+			currentScenePhys = append(currentScenePhys, fop)
 		}
-
-		layers := layerSettings {
-
-		}
-
-		ls.layers = append(ls.layers, layers)
 	}
 
 }

@@ -9,10 +9,12 @@ import (
 
 	"github.com/creepitall/test_pixel/internal/domain"
 	"github.com/creepitall/test_pixel/internal/image"
+	"github.com/creepitall/test_pixel/internal/worldmap"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 
 	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
 )
@@ -29,6 +31,7 @@ type heroPhys struct {
 	jumpSpeed float64
 	isDeath   bool
 	isJump    bool
+	isWall    bool
 
 	camera pixel.Vec
 	rect   pixel.Rect
@@ -56,9 +59,14 @@ var CurrentHeroPhysics *heroPhys
 
 var CurrentHeroAnimation *heroAnim
 
+var CurrentPlatformPhys []pixel.Rect
+
 type screenLogger struct {
-	bt *text.Text
-	ba *text.Atlas
+	bt       *text.Text
+	ba       *text.Atlas
+	canvas   *imdraw.IMDraw
+	onBt     bool
+	onCanvas bool
 }
 
 func run() {
@@ -85,12 +93,18 @@ func run() {
 	camPos := pixel.ZV
 	var cam pixel.Matrix
 
+	// logger
 	// init text
 	basicAtlas := text.NewAtlas(basicfont.Face7x13, text.ASCII)
+	//canvas
+	imd := imdraw.New(nil)
+
 	basicScreenLogger := screenLogger{
-		bt: text.New(pixel.V(10, 900), basicAtlas),
-		ba: basicAtlas,
+		bt:     text.New(pixel.V(10, 900), basicAtlas),
+		ba:     basicAtlas,
+		canvas: imd,
 	}
+	basicScreenLogger.initCanvas()
 	//
 
 	last := time.Now()
@@ -112,10 +126,9 @@ func run() {
 		//cam = pixel.IM.Moved(win.Bounds().Center().Sub(camPos))
 		if camPos.Y < 0 {
 			camPos.Y = 0
+		} else if camPos.Y >= win.Bounds().H()/2-100 {
+			camPos.Y = win.Bounds().H()/2 - 100
 		}
-		// if camPos.Y > win.Bounds().H() {
-		// 	camPos.Y = win.Bounds().H()
-		// }
 		if camPos.X < 0 {
 			camPos.X = 0
 		} else if camPos.X >= (win.Bounds().W() / 2) {
@@ -131,14 +144,21 @@ func run() {
 			initHeroPlayer()
 		}
 
+		if win.JustPressed(pixelgl.KeyF1) {
+			basicScreenLogger.onBt = !basicScreenLogger.onBt
+		}
+		if win.JustPressed(pixelgl.KeyF2) {
+			basicScreenLogger.onCanvas = !basicScreenLogger.onCanvas
+		}
+
 		if win.JustPressed(pixelgl.MouseButtonLeft) {
-			//fmt.Println(win.MousePosition())
-			fmt.Printf("char hero max[%v] \r\n", CurrentHeroPhysics.rect.Max)
-			fmt.Println("")
-			fmt.Printf("cam pos [%v] \r\n", camPos)
-			fmt.Println("")
-			fmt.Printf("current cp: [%v] \r\n zv: [%v] \r\n dt: %v \r\n values: %v \r\n", camPos, pixel.ZV, dt, 1-math.Pow(1.0/128, dt))
-			fmt.Println("")
+			fmt.Println(win.MousePosition())
+			// fmt.Printf("char hero max[%v] \r\n", CurrentHeroPhysics.rect.Max)
+			// fmt.Println("")
+			// fmt.Printf("cam pos [%v] \r\n", camPos)
+			// fmt.Println("")
+			// fmt.Printf("current cp: [%v] \r\n zv: [%v] \r\n dt: %v \r\n values: %v \r\n", camPos, pixel.ZV, dt, 1-math.Pow(1.0/128, dt))
+			// fmt.Println("")
 
 			// fmt.Printf("cam pos [%v] \r\n", camPos)
 			// fmt.Printf("cam [%v] \r\n", cam)
@@ -152,12 +172,16 @@ func run() {
 		if win.Pressed(pixelgl.KeyLeft) {
 			//camPos.X -= camSpeed * dt
 			//camPos.X = CurrentHeroPhysics.rect.Max.X + 20
-			ctrl.X--
+			if CurrentHeroPhysics.rect.Min.X > 0 {
+				ctrl.X--
+			}
 		}
 		if win.Pressed(pixelgl.KeyRight) {
 			//
 			//camPos.X = CurrentHeroPhysics.rect.Min.X - 20
-			ctrl.X++
+			if CurrentHeroPhysics.rect.Max.X < 2880 {
+				ctrl.X++
+			}
 		}
 		if win.JustPressed(pixelgl.KeyUp) {
 			ctrl.Y = 1
@@ -166,13 +190,14 @@ func run() {
 		win.Clear(color.White)
 
 		for _, sprite := range domain.SceneSprites["back"] {
-			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(960, 480)))
+			//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(960, 480)))
+			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 4.0).Moved(pixel.V(1280, 960)))
 		}
+		// for _, sprite := range domain.SceneSprites["back"] {
+		// 	//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(960*3, 480)))
+		// 	sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(pixel.V(1140, 720)))
+		// }
 
-		// rock1.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(32, 32)))
-		// rock2.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(96, 32)))
-		// rock1.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(160, 32)))
-		// rock2.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(224, 32)))
 		test1.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(1440, 672)))
 
 		CurrentHeroPhysics.update(dt, ctrl)
@@ -198,7 +223,16 @@ func run() {
 }
 
 func (sc *screenLogger) drawlog(win *pixelgl.Window, cam pixel.Matrix) {
+	if sc.onBt {
+		sc.drawText(win, cam)
+	}
 
+	if sc.onCanvas {
+		sc.drawCanvas(win)
+	}
+}
+
+func (sc *screenLogger) drawText(win *pixelgl.Window, cam pixel.Matrix) {
 	var position pixel.Vec = pixel.V(10, 900)
 	if CurrentHeroPhysics.camera.X > -10.0 {
 		position.X += CurrentHeroPhysics.camera.X
@@ -211,6 +245,8 @@ func (sc *screenLogger) drawlog(win *pixelgl.Window, cam pixel.Matrix) {
 	sc.bt.Color = colornames.Whitesmoke
 	fmt.Fprintf(sc.bt, "text postion: %v \r\n", position)
 	sc.bt.Color = colornames.Whitesmoke
+	fmt.Fprintf(sc.bt, "platform status: %v \r\n", CurrentHeroPhysics.ground)
+	fmt.Fprintf(sc.bt, "wall status: %v \r\n", CurrentHeroPhysics.isWall)
 	fmt.Fprintf(sc.bt, "dead status: %v \r\n", CurrentHeroPhysics.isDeath)
 	fmt.Fprintf(sc.bt, "jump status: %v \r\n", CurrentHeroPhysics.isJump)
 
@@ -235,10 +271,32 @@ func (sc *screenLogger) drawlog(win *pixelgl.Window, cam pixel.Matrix) {
 
 	sc.bt.Draw(win, pixel.IM.Scaled(sc.bt.Orig, 1))
 
+	for _, platform := range CurrentPlatformPhys {
+		sc.bt = text.New(platform.Min, sc.ba)
+		sc.bt.Color = colornames.Pink
+		fmt.Fprintf(sc.bt, platform.String())
+		sc.bt.Draw(win, pixel.IM.Scaled(sc.bt.Orig, 1))
+	}
+}
+
+func (sc *screenLogger) drawCanvas(win *pixelgl.Window) {
+	sc.canvas.Draw(win)
+}
+
+func (sc *screenLogger) initCanvas() {
+	for _, p := range CurrentPlatformPhys {
+		sc.canvas.Color = colornames.Orange
+		sc.canvas.EndShape = imdraw.RoundEndShape
+		//imd.Push(pixel.V(0, 64), pixel.V(320, 64))
+		sc.canvas.Push(p.Min, p.Max)
+		sc.canvas.Rectangle(1)
+		sc.canvas.Line(2)
+	}
 }
 
 func main() {
 	initGameConfig()
+	initPhysObjects()
 	initHeroPlayer()
 	pixelgl.Run(run)
 }
@@ -246,21 +304,37 @@ func main() {
 func initGameConfig() {
 	domain.CurrentScene = "start"
 
-	//worldmap.CreateNewMap()
 	image.FillFrontSpriteByScene()
 	image.FillHeroPlayerSprite()
+}
+
+func initPhysObjects() {
+	value := worldmap.CreateNewMap()
+
+	CurrentPlatformPhys = make([]pixel.Rect, 0)
+	for _, vl := range value {
+		rc := pixel.Rect{
+			Min: pixel.V(vl.Min.X, vl.Min.Y),
+			Max: pixel.V(vl.Max.X, vl.Max.Y),
+		}
+
+		CurrentPlatformPhys = append(CurrentPlatformPhys, rc)
+	}
+
 }
 
 func initHeroPlayer() {
 	CurrentHeroPhysics = &heroPhys{
 		gravity: -512,
 		//runSpeed: 96,
-		runSpeed:  196,
-		jumpSpeed: 256,
+		runSpeed: 196,
+		//jumpSpeed: 256,
+		jumpSpeed: 300,
 		rect:      pixel.R(32, 64, 96, 128),
 		camera:    pixel.ZV,
 		isDeath:   false,
 		isJump:    false,
+		isWall:    false,
 	}
 
 	CurrentHeroAnimation = &heroAnim{
@@ -280,10 +354,13 @@ func (hp *heroPhys) changeCameraValue(win *pixelgl.Window) {
 
 func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 	// apply controls
+	//var sideRight bool
 	switch {
 	case ctrl.X < 0:
+		//	sideRight = false
 		hp.vel.X = -hp.runSpeed
 	case ctrl.X > 0:
+		//	sideRight = true
 		hp.vel.X = +hp.runSpeed
 	default:
 		hp.vel.X = 0
@@ -292,22 +369,64 @@ func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
 	//hp.ground = false
 
 	hp.vel.Y += hp.gravity * dt
+	//if !hp.isWall {
 	hp.rect = hp.rect.Moved(hp.vel.Scaled(dt))
+	//}
 
 	hp.ground = false
+	//hp.isWall = false
 	if hp.vel.Y <= 0 {
 		//if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 265 && hp.rect.Min.Y >= 32 {
-		if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 2880 && hp.rect.Min.Y >= 32 {
+		// if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 2880 && hp.rect.Min.Y >= 32 {
+		// 	hp.ground = true
+		// }
+
+		avrX := (hp.rect.Max.X + hp.rect.Min.X) / 2
+		for _, platform := range CurrentPlatformPhys {
+			if avrX <= platform.Min.X || avrX >= platform.Max.X {
+				continue
+			}
+			if hp.rect.Min.Y >= platform.Min.Y {
+				continue
+			}
+			hp.vel.Y = 0
+			//hp.rect = hp.rect.Moved(pixel.V(0, platform.Max.Y-platform.Min.Y))
+			hp.rect = hp.rect.Moved(pixel.V(0, platform.Min.Y-hp.rect.Min.Y))
 			hp.ground = true
+			hp.isJump = false
 		}
 
-		if hp.ground {
-			if hp.rect.Max.Y < 128 {
-				hp.rect = hp.rect.Moved(pixel.V(0, 64-hp.rect.Min.Y))
-				hp.vel.Y = 0
-				hp.isJump = false
-			}
-		}
+		//
+		//avrY := hp.rect.Min.Y
+		// for _, platform := range CurrentPlatformPhys {
+		// 	if hp.rect.Max.X > platform.Min.X && hp.rect.Min.Y < platform.Min.Y/2 {
+		// 		hp.isWall = true
+		// 		break
+		// 	}
+		// 	hp.isWall = false
+		// 	// if avrX < platform.Min.X && avrX > platform.Max.X {
+		// 	// 	continue
+		// 	// }
+
+		// 	// if hp.rect.Min.Y < (platform.Min.Y/2)-1 {
+		// 	// 	continue
+		// 	// }
+
+		// 	// // if avrY >= (platform.Min.Y / 2) {
+		// 	// hp.ground = true
+		// 	// } else {
+		// 	// 	hp.ground = false
+		// 	// 	break
+		// 	// }
+		// }
+
+		// if hp.ground {
+		// 	if hp.rect.Max.Y < 128 {
+		// 		hp.rect = hp.rect.Moved(pixel.V(0, 64-hp.rect.Min.Y))
+		// 		hp.vel.Y = 0
+
+		// 	}
+		// }
 	}
 
 	if !hp.isJump && ctrl.Y > 0 {
