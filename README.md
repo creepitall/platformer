@@ -10,6 +10,11 @@ https://youtu.be/OGulTJXcpyg
 
 ---
 
+12/01/22
+- global fix architecture(add object Character, add scene, delete global param etc.) 
+- add load config 
+- add save log file for test
+
 28/11/21
 - fix character camera (in height)
 - fix character movement outside the screen 

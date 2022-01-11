@@ -2,6 +2,7 @@ package domain
 
 import (
 	"runtime"
+	"time"
 
 	"github.com/faiface/pixel"
 )
@@ -15,6 +16,8 @@ const GlobalGravity = -512
 //var CurrentScene string
 
 //var Test1 *pixel.Sprite
+
+var PreviousTime time.Time
 
 var (
 	HeroPlayerRunFrames  []pixel.Rect

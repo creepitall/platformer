@@ -1,6 +1,9 @@
 package character
 
-import "github.com/faiface/pixel"
+import (
+	"encoding/json"
+	"github.com/faiface/pixel"
+)
 
 // Физика
 type Physics struct {
@@ -19,6 +22,27 @@ func CreateNewPhysics(runSpeed, jumpSpeed float64, rec pixel.Rect, vel pixel.Vec
 	}
 }
 
+func (p *Physics) ReturnInfo() string {
+	type hp struct {
+		RunSpeed  float64    `json:"runSpeed"`
+		JumpSpeed float64    `json:"jumpSpeed"`
+		Rectangle pixel.Rect `json:"rect"`
+		Velocity  pixel.Vec  `json:"vel"`
+	}
+	tmp := &hp{
+		RunSpeed:  p.RunSpeed,
+		JumpSpeed: p.JumpSpeed,
+		Rectangle: p.Rectangle,
+		Velocity:  p.Velocity,
+	}
+	bytes, err := json.Marshal(tmp)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(bytes)
+}
+
 func (p *Physics) Validate() bool {
 	if p.Rectangle.Min.X < 0 {
 		return false
@@ -34,7 +58,7 @@ func (p *Physics) Validate() bool {
 
 func (p *Physics) Update(dt float64, ctrl pixel.Vec) {
 	//if p.Validate() {
-		p.updateSideX(dt, &ctrl)
+	p.updateSideX(dt, &ctrl)
 	//}
 }
 

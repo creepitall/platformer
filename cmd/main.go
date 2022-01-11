@@ -9,7 +9,9 @@ import (
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 	_ "image/png"
+	"log"
 	"math"
+	"os"
 	"time"
 
 	"github.com/faiface/pixel"
@@ -109,8 +111,7 @@ func run() {
 
 	last := time.Now()
 	for !win.Closed() {
-
-		scene.DrawScene(win, config, last)
+		scene.DrawScene(win, config, &last)
 
 		//CurrentHeroPhysics.changeCameraValue(win)
 		//
@@ -267,6 +268,15 @@ func (sc *screenLogger) initCanvas() {
 }
 
 func main() {
+	domain.PreviousTime = time.Now()
+	f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	log.SetOutput(f)
+
 	//initGameConfig()
 	initPhysObjects()
 	//initHeroPlayer()

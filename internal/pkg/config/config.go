@@ -8,16 +8,17 @@ import (
 )
 
 type Config struct {
-	Title       string        `yaml:"title"`
-	WindowsSize WindowSize    `yaml:"windows_size"`
-	VSync       bool          `yaml:"vsync"`
-	EnableFPS   bool 			`yaml:"enable_fps"`
-	FPS         time.Duration `yaml:"fps"`
+	Title       string
+	WindowsSize WindowSize
+	VSync       bool
+	EnableFPS   bool
+	FPS         time.Duration
+	Logging     bool
 }
 
 type WindowSize struct {
-	X float64 `yaml:"x"`
-	Y float64 `yaml:"y"`
+	X float64
+	Y float64
 }
 
 func (c *Config) ReadFile(filepath string) {
@@ -29,8 +30,9 @@ func (c *Config) ReadFile(filepath string) {
 		Title       string          `yaml:"title"`
 		WindowsSize aliasWindowSize `yaml:"windows_size"`
 		VSync       bool            `yaml:"vsync"`
-		EnableFPS   bool 			`yaml:"enable_fps"`
+		EnableFPS   bool            `yaml:"enable_fps"`
 		FPS         int             `yaml:"fps"`
+		Logging     bool            `yaml:"logging"`
 	}
 	var tmp alias
 
@@ -50,6 +52,7 @@ func (c *Config) ReadFile(filepath string) {
 		Y: tmp.WindowsSize.Y}
 	c.EnableFPS = tmp.EnableFPS
 	c.FPS = time.Duration(tmp.FPS)
+	c.Logging = tmp.Logging
 }
 
 func LoadConfig() *Config {

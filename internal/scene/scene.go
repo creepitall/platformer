@@ -9,6 +9,7 @@ import (
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"image/color"
+	"log"
 	"time"
 )
 
@@ -18,7 +19,7 @@ var (
 	cam    pixel.Matrix
 	scene  Scene
 	char   *character.Character
-	ctrl  pixel.Vec
+	ctrl   pixel.Vec
 )
 
 type Scene struct {
@@ -29,7 +30,31 @@ type Scene struct {
 	Test1        *pixel.Sprite              // Передний план сцены (временно так)
 }
 
-func DrawScene(windows *pixelgl.Window, config *config.Config, last time.Time) {
+func ConsDataToLog() string {
+	var str string
+	str += char.Physics.ReturnInfo()
+	str += "\r\n"
+	str += char.Animation.ReturnInfo()
+
+	return str
+}
+
+func TikTak(dt float64, isLog bool) {
+	if !isLog {
+		return
+	}
+
+	exptTime := domain.PreviousTime.Add(2 * time.Second)
+
+	if time.Until(exptTime) < (0 * time.Second) {
+		chp := ConsDataToLog()
+		log.Println(chp)
+		log.Printf("dt: %v \r\n", dt)
+		domain.PreviousTime = time.Now()
+	}
+}
+
+func DrawScene(windows *pixelgl.Window, config *config.Config, last *time.Time) {
 	if !scene.Init {
 		InitCharacter()
 		scene.InitScene()
@@ -37,12 +62,13 @@ func DrawScene(windows *pixelgl.Window, config *config.Config, last time.Time) {
 
 	// Ограничение FPS
 	if config.EnableFPS {
-		time.Sleep(1 * time.Second / config.FPS)
+		time.Sleep(1 * time.Second / 60)
 	}
 
 	// Коэф.
-	last = time.Now()
-	dt := time.Since(last).Seconds()
+	dt := time.Since(*last).Seconds()
+	*last = time.Now()
+	//log.Printf("loop - dt: %v, last: %v \r\n", dt, last)
 
 	// Камера
 	cam = pixel.IM.Moved(pixel.ZV.Scaled(-1))
@@ -58,6 +84,8 @@ func DrawScene(windows *pixelgl.Window, config *config.Config, last time.Time) {
 	char.Update(windows, dt, ctrl)
 
 	windows.Update()
+
+	TikTak(dt, config.Logging)
 
 	// Вывод данных FPS
 	frames++

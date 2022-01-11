@@ -10,6 +10,7 @@ type physics interface {
 	ReturnRectangleW() float64
 	ReturnRectangleH() float64
 	ReturnRectangleCenter() pixel.Vec
+	ReturnInfo() string
 }
 
 type animation interface {
@@ -17,6 +18,7 @@ type animation interface {
 	ReturnFrameW() float64
 	ReturnFrameH() float64
 	Draw(t *pixelgl.Window, scaleXYVec pixel.Vec, rectCenter pixel.Vec)
+	ReturnInfo() string
 }
 
 type state interface {

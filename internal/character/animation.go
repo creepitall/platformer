@@ -1,6 +1,7 @@
 package character
 
 import (
+	"encoding/json"
 	"github.com/creepitall/platformer/internal/domain"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
@@ -23,6 +24,27 @@ func CreateNewAnimation(dir float64, sh pixel.Picture) *Animation {
 		Rate:  1.0 / 10,
 		Dir:   dir,
 	}
+}
+
+func (a *Animation) ReturnInfo() string {
+	type ha struct {
+		Rate    float64    `json:"rate"`
+		Counter float64    `json:"counter"`
+		Dir     float64    `json:"dir"`
+		Frame   pixel.Rect `json:"frame"`
+	}
+	tmp := &ha{
+		Rate:    a.Rate,
+		Counter: a.Counter,
+		Dir:     a.Dir,
+		Frame:   a.Frame,
+	}
+	bytes, err := json.Marshal(tmp)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(bytes)
 }
 
 func (a *Animation) Update(dt float64) {
