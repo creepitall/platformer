@@ -4,7 +4,7 @@ import (
 	"image"
 	"os"
 
-	"github.com/creepitall/test_pixel/internal/domain"
+	"github.com/creepitall/platformer/internal/domain"
 	"github.com/faiface/pixel"
 )
 
@@ -65,16 +65,17 @@ func FillHeroPlayerSprite() {
 	}
 }
 
-func FillFrontSpriteByScene() {
-	domain.SceneSprites = make(map[string][]*pixel.Sprite)
-	switch domain.CurrentScene {
+func FillFrontSpriteByScene(CurrentScene string) map[string][]*pixel.Sprite {
+	m := make(map[string][]*pixel.Sprite)
+	switch CurrentScene {
 	case "start":
 		{
-			domain.SceneSprites["front"] = returnStartSceneAssets_Front()
-			domain.SceneSprites["back"] = returnStartSceneAssets_Background()
+			m["front"] = returnStartSceneAssets_Front()
+			m["back"] = returnStartSceneAssets_Background()
 		}
 
 	}
+	return m
 }
 
 func returnStartSceneAssets_Front() []*pixel.Sprite {

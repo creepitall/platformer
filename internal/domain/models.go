@@ -6,11 +6,15 @@ import (
 	"github.com/faiface/pixel"
 )
 
-var DefaultSprites map[string]*pixel.Sprite
+const GlobalGravity = -512
 
-var SceneSprites map[string][]*pixel.Sprite
+//var DefaultSprites map[string]*pixel.Sprite
 
-var CurrentScene string
+//var SceneSprites map[string][]*pixel.Sprite
+
+//var CurrentScene string
+
+//var Test1 *pixel.Sprite
 
 var (
 	HeroPlayerRunFrames  []pixel.Rect

@@ -2,16 +2,15 @@ package main
 
 import (
 	"fmt"
-	"image/color"
+	"github.com/creepitall/platformer/internal/domain"
+	envConfig "github.com/creepitall/platformer/internal/pkg/config"
+	"github.com/creepitall/platformer/internal/scene"
+	"github.com/creepitall/platformer/internal/worldmap"
+	"golang.org/x/image/colornames"
+	"golang.org/x/image/font/basicfont"
 	_ "image/png"
 	"math"
 	"time"
-
-	"github.com/creepitall/test_pixel/internal/domain"
-	"github.com/creepitall/test_pixel/internal/image"
-	"github.com/creepitall/test_pixel/internal/worldmap"
-	"golang.org/x/image/colornames"
-	"golang.org/x/image/font/basicfont"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
@@ -70,28 +69,29 @@ type screenLogger struct {
 }
 
 func run() {
+	config := envConfig.LoadConfig()
+
+	ws := config.WindowsSize
 	cfg := pixelgl.WindowConfig{
-		Title: "little story: the knight",
+		Title: config.Title,
 		//Bounds: pixel.R(0, 0, 960, 480),
-		Bounds: pixel.R(0, 0, 1920, 960),
-		VSync:  true,
+		Bounds: pixel.R(0, 0, ws.X, ws.Y),
+		VSync:  config.VSync,
 	}
 	win, err := pixelgl.NewWindow(cfg)
 	if err != nil {
 		panic(err)
 	}
 
-	var (
-		frames = 0
-		second = time.Tick(time.Second)
-	)
+	//var (
+	//	frames = 0
+	//	second = time.Tick(time.Second)
+	//)
 
-	// rock1 := domain.SceneSprites["front"][6]
-	// rock2 := domain.SceneSprites["front"][7]
-	test1 := domain.SceneSprites["front"][0]
+	//test1 := domain.SceneSprites["front"][0]
 
-	camPos := pixel.ZV
-	var cam pixel.Matrix
+	//camPos := pixel.ZV
+	//var cam pixel.Matrix
 
 	// logger
 	// init text
@@ -109,116 +109,88 @@ func run() {
 
 	last := time.Now()
 	for !win.Closed() {
-		//time.Sleep(1 * time.Second / 60) // fix to 60 fps
-		dt := time.Since(last).Seconds()
-		last = time.Now()
 
-		//if CurrentHeroPhysics.rect.Max.X < (win.Bounds().Max.X / 2) {
-		//	camPos = pixel.Lerp(camPos, pixel.ZV, 1-math.Pow(1.0/128, dt))
-		//	//cam := pixel.IM.Moved(camPos.Scaled(-1))
-		//	cam = pixel.IM.Moved(camPos.Scaled(-1))
-		//} else {
+		scene.DrawScene(win, config, last)
 
-		CurrentHeroPhysics.changeCameraValue(win)
-
-		camPos = pixel.Lerp(camPos, CurrentHeroPhysics.camera, 1-math.Pow(1.0/128, dt))
-		//camPos = pixel.Lerp(camPos, CurrentHeroPhysics.rect.Max, 1-math.Pow(1.0/128, dt))
-		//cam = pixel.IM.Moved(win.Bounds().Center().Sub(camPos))
-		if camPos.Y < 0 {
-			camPos.Y = 0
-		} else if camPos.Y >= win.Bounds().H()/2-100 {
-			camPos.Y = win.Bounds().H()/2 - 100
-		}
-		if camPos.X < 0 {
-			camPos.X = 0
-		} else if camPos.X >= (win.Bounds().W() / 2) {
-			camPos.X = (win.Bounds().W() / 2)
-		}
-		cam = pixel.IM.Moved(camPos.Scaled(-1))
+		//CurrentHeroPhysics.changeCameraValue(win)
+		//
+		//camPos = pixel.Lerp(camPos, CurrentHeroPhysics.camera, 1-math.Pow(1.0/128, dt))
+		//
+		//if camPos.Y < 0 {
+		//	camPos.Y = 0
+		//} else if camPos.Y >= win.Bounds().H()/2-100 {
+		//	camPos.Y = win.Bounds().H()/2 - 100
 		//}
-		//cam := pixel.IM.Moved(CurrentHeroPhysics.rect.Center())
-		win.SetMatrix(cam)
+		//if camPos.X < 0 {
+		//	camPos.X = 0
+		//} else if camPos.X >= (win.Bounds().W() / 2) {
+		//	camPos.X = (win.Bounds().W() / 2)
+		//}
+		//cam = pixel.IM.Moved(camPos.Scaled(-1))
+		//
+		//win.SetMatrix(cam)
+		//
+		//if CurrentHeroPhysics.isDeath {
+		//	initHeroPlayer()
+		//}
+		//
+		//if win.JustPressed(pixelgl.KeyEscape) {
+		//	win.SetClosed(true)
+		//}
+		//if win.JustPressed(pixelgl.KeyF1) {
+		//	basicScreenLogger.onBt = !basicScreenLogger.onBt
+		//}
+		//if win.JustPressed(pixelgl.KeyF2) {
+		//	basicScreenLogger.onCanvas = !basicScreenLogger.onCanvas
+		//}
+		//
+		//if win.JustPressed(pixelgl.MouseButtonLeft) {
+		//	fmt.Println(win.MousePosition())
+		//	// fmt.Printf("char hero max[%v] \r\n", CurrentHeroPhysics.rect.Max)
+		//	// fmt.Println("")
+		//	// fmt.Printf("cam pos [%v] \r\n", camPos)
+		//	// fmt.Println("")
+		//	// fmt.Printf("current cp: [%v] \r\n zv: [%v] \r\n dt: %v \r\n values: %v \r\n", camPos, pixel.ZV, dt, 1-math.Pow(1.0/128, dt))
+		//	// fmt.Println("")
+		//
+		//	// fmt.Printf("cam pos [%v] \r\n", camPos)
+		//	// fmt.Printf("cam [%v] \r\n", cam)
+		//}
+		//
+		//if win.JustPressed(pixelgl.KeyR) {
+		//	initHeroPlayer()
+		//}
+		//
+		//ctrl := pixel.ZV
+		//if win.Pressed(pixelgl.KeyLeft) {
+		//	if CurrentHeroPhysics.rect.Min.X > 0 {
+		//		ctrl.X--
+		//	}
+		//}
+		//if win.Pressed(pixelgl.KeyRight) {
+		//	if CurrentHeroPhysics.rect.Max.X < 2880 {
+		//		ctrl.X++
+		//	}
+		//}
+		//if win.JustPressed(pixelgl.KeyUp) {
+		//	ctrl.Y = 1
+		//}
+		//
+		//win.Clear(color.White)
+		//
+		//for _, sprite := range domain.SceneSprites["back"] {
+		//	sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 4.0).Moved(pixel.V(1280, 960)))
+		//}
+		//
+		//test1.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(1440, 672)))
+		//
+		//basicScreenLogger.drawlog(win, cam)
+		//
+		//CurrentHeroPhysics.update(dt, ctrl)
+		//CurrentHeroAnimation.update(dt, CurrentHeroPhysics)
+		//
+		//CurrentHeroAnimation.draw(win, CurrentHeroPhysics)
 
-		if CurrentHeroPhysics.isDeath {
-			//time.Sleep(1 * time.Second)
-			initHeroPlayer()
-		}
-
-		if win.JustPressed(pixelgl.KeyF1) {
-			basicScreenLogger.onBt = !basicScreenLogger.onBt
-		}
-		if win.JustPressed(pixelgl.KeyF2) {
-			basicScreenLogger.onCanvas = !basicScreenLogger.onCanvas
-		}
-
-		if win.JustPressed(pixelgl.MouseButtonLeft) {
-			fmt.Println(win.MousePosition())
-			// fmt.Printf("char hero max[%v] \r\n", CurrentHeroPhysics.rect.Max)
-			// fmt.Println("")
-			// fmt.Printf("cam pos [%v] \r\n", camPos)
-			// fmt.Println("")
-			// fmt.Printf("current cp: [%v] \r\n zv: [%v] \r\n dt: %v \r\n values: %v \r\n", camPos, pixel.ZV, dt, 1-math.Pow(1.0/128, dt))
-			// fmt.Println("")
-
-			// fmt.Printf("cam pos [%v] \r\n", camPos)
-			// fmt.Printf("cam [%v] \r\n", cam)
-		}
-
-		if win.JustPressed(pixelgl.KeyR) {
-			initHeroPlayer()
-		}
-
-		ctrl := pixel.ZV
-		if win.Pressed(pixelgl.KeyLeft) {
-			//camPos.X -= camSpeed * dt
-			//camPos.X = CurrentHeroPhysics.rect.Max.X + 20
-			if CurrentHeroPhysics.rect.Min.X > 0 {
-				ctrl.X--
-			}
-		}
-		if win.Pressed(pixelgl.KeyRight) {
-			//
-			//camPos.X = CurrentHeroPhysics.rect.Min.X - 20
-			if CurrentHeroPhysics.rect.Max.X < 2880 {
-				ctrl.X++
-			}
-		}
-		if win.JustPressed(pixelgl.KeyUp) {
-			ctrl.Y = 1
-		}
-
-		win.Clear(color.White)
-
-		for _, sprite := range domain.SceneSprites["back"] {
-			//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(960, 480)))
-			sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 4.0).Moved(pixel.V(1280, 960)))
-		}
-		// for _, sprite := range domain.SceneSprites["back"] {
-		// 	//sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 2.0).Moved(pixel.V(960*3, 480)))
-		// 	sprite.Draw(win, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(pixel.V(1140, 720)))
-		// }
-
-		test1.Draw(win, pixel.IM.Scaled(pixel.ZV, 1.0).Moved(pixel.V(1440, 672)))
-
-		CurrentHeroPhysics.update(dt, ctrl)
-		CurrentHeroAnimation.update(dt, CurrentHeroPhysics)
-
-		//hero.Set(ga.sheet, ga.frame)
-		//hero.Draw(win, pixel.IM.Scaled(pixel.ZV, 3.0).Moved(hp.rect.Center()))
-
-		CurrentHeroAnimation.draw(win, CurrentHeroPhysics)
-
-		basicScreenLogger.drawlog(win, cam)
-
-		win.Update()
-
-		frames++
-		select {
-		case <-second:
-			win.SetTitle(fmt.Sprintf("%s | FPS: %d", cfg.Title, frames))
-			frames = 0
-		default:
-		}
 	}
 }
 
@@ -295,17 +267,10 @@ func (sc *screenLogger) initCanvas() {
 }
 
 func main() {
-	initGameConfig()
+	//initGameConfig()
 	initPhysObjects()
-	initHeroPlayer()
+	//initHeroPlayer()
 	pixelgl.Run(run)
-}
-
-func initGameConfig() {
-	domain.CurrentScene = "start"
-
-	image.FillFrontSpriteByScene()
-	image.FillHeroPlayerSprite()
 }
 
 func initPhysObjects() {

@@ -1,0 +1,9 @@
+# rename this file to values.yaml and pass --local-config=cfg/values.yaml flag to use these values.
+
+title: "little story: the knight"
+vsync: true
+fps: 60
+enable_fps: false
+windows_size:
+  x: 1920
+  y: 960

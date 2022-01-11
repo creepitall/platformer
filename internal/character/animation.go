@@ -1,0 +1,56 @@
+package character
+
+import (
+	"github.com/creepitall/platformer/internal/domain"
+	"github.com/faiface/pixel"
+	"github.com/faiface/pixel/pixelgl"
+	"math"
+)
+
+// Анимация
+type Animation struct {
+	Sheet   pixel.Picture // Текущий видимый слой
+	Rate    float64       // скорость смены фрейма
+	Counter float64       // счетчик
+	Dir     float64       // нужно для скалирования изображения по вертикали
+	Frame   pixel.Rect    // Размер фрейма
+	Sprite  *pixel.Sprite // Спрайты
+}
+
+func CreateNewAnimation(dir float64, sh pixel.Picture) *Animation {
+	return &Animation{
+		Sheet: sh,
+		Rate:  1.0 / 10,
+		Dir:   dir,
+	}
+}
+
+func (a *Animation) Update(dt float64) {
+	a.Counter += dt
+
+	i := int(math.Floor(a.Counter / a.Rate))
+	a.Sheet = domain.HeroPlayerStayAssets
+	a.Frame = domain.HeroPlayerStayFrames[i%len(domain.HeroPlayerStayFrames)]
+}
+
+// rectCenter - центр физической модели объекта
+func (a *Animation) Draw(t *pixelgl.Window, scaleXYVec pixel.Vec, rectCenter pixel.Vec) {
+	if a.Sprite == nil {
+		a.Sprite = pixel.NewSprite(nil, pixel.Rect{})
+	}
+	// draw the correct frame with the correct position and direction
+	a.Sprite.Set(a.Sheet, a.Frame)
+	a.Sprite.Draw(t, pixel.IM.
+		ScaledXY(pixel.ZV, scaleXYVec).
+		ScaledXY(pixel.ZV, pixel.V(+a.Dir, 1)).
+		Moved(rectCenter),
+	)
+}
+
+func (a *Animation) ReturnFrameW() float64 {
+	return a.Frame.W()
+}
+
+func (a *Animation) ReturnFrameH() float64 {
+	return a.Frame.H()
+}

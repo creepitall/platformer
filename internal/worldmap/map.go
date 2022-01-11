@@ -1,8 +1,8 @@
 package worldmap
 
 import (
-	"github.com/creepitall/test_pixel/internal/domain"
-	tmx "github.com/creepitall/test_pixel/internal/pkg/tmx"
+	"github.com/creepitall/platformer/internal/domain"
+	tmx "github.com/creepitall/platformer/internal/pkg/tmx"
 )
 
 var currentScenePhys []frontObjectPhys
