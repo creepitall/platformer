@@ -7,31 +7,29 @@ import (
 	"github.com/faiface/pixel"
 )
 
-const GlobalGravity = -512
+const (
+	GlobalGravity = -512
+)
 
-//var DefaultSprites map[string]*pixel.Sprite
+var (
+	PreviousTime time.Time
+)
 
-//var SceneSprites map[string][]*pixel.Sprite
-
-//var CurrentScene string
-
-//var Test1 *pixel.Sprite
-
-var PreviousTime time.Time
-
+// Главный герой фреймы
 var (
 	HeroPlayerRunFrames  []pixel.Rect
 	HeroPlayerStayFrames []pixel.Rect
 	HeroPlayerJumpFrames []pixel.Rect
 )
 
+// Главный герой ассеты
 var (
 	HeroPlayerRunAssets  pixel.Picture
 	HeroPlayerStayAssets pixel.Picture
 	HeroPlayerJumpAssets pixel.Picture
 )
 
-// it's bag or not?
+// TODO: вынести в core
 func ReturnFilePath(fp string) string {
 	var path string
 	if runtime.GOOS == "windows" {

@@ -18,6 +18,13 @@ func CreateNewState() *State {
 	return &State{}
 }
 
-func (s *State) Update() {
+func (s *State) Update(vel float64) {
+	s.CurrentState = CharStateStay
+	if vel != 0 {
+		s.CurrentState = CharStateRun
+	}
+}
 
+func (s *State) ReturnCurrentState() CharacterState {
+	return s.CurrentState
 }

@@ -92,7 +92,6 @@ func run() {
 
 	//test1 := domain.SceneSprites["front"][0]
 
-	//camPos := pixel.ZV
 	//var cam pixel.Matrix
 
 	// logger
@@ -109,6 +108,7 @@ func run() {
 	basicScreenLogger.initCanvas()
 	//
 
+	//camPos := pixel.ZV
 	last := time.Now()
 	for !win.Closed() {
 		scene.DrawScene(win, config, &last)

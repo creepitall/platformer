@@ -43,23 +43,26 @@ func (p *Physics) ReturnInfo() string {
 	return string(bytes)
 }
 
-func (p *Physics) Validate() bool {
-	if p.Rectangle.Min.X < 0 {
-		return false
+func (p *Physics) Validate(ctrl *pixel.Vec) *pixel.Vec {
+	// Движение <-
+	if p.Rectangle.Min.X < 0 && ctrl.X < 0 {
+		ctrl.X = 0
 	}
-	// Больше размера сцены
+	// Больше размера сцены, движение ->
 	// TODO здесь должна быть константа
-	if p.Rectangle.Max.X > 2880 {
-		return false
+	if p.Rectangle.Max.X > 2880 && ctrl.X > 0 {
+		ctrl.X = 0
 	}
 
-	return true
+	return ctrl
 }
 
-func (p *Physics) Update(dt float64, ctrl pixel.Vec) {
-	//if p.Validate() {
-	p.updateSideX(dt, &ctrl)
-	//}
+
+func (p *Physics) Update(dt float64, ctrl *pixel.Vec) float64 {
+	ctrl = p.Validate(ctrl)
+	p.updateSideX(dt, ctrl)
+
+	return p.Velocity.Len()
 }
 
 // Обновить физические данные движения по X
@@ -82,6 +85,14 @@ func (p *Physics) ReturnRectangleW() float64 {
 
 func (p *Physics) ReturnRectangleH() float64 {
 	return p.Rectangle.H()
+}
+
+func (p *Physics) ReturnRectangleSumX() float64 {
+	return p.Rectangle.Min.X + p.Rectangle.Max.X
+}
+
+func (p *Physics) ReturnRectangleSumY() float64 {
+	return p.Rectangle.Min.Y + p.Rectangle.Max.Y
 }
 
 func (p *Physics) ReturnRectangleCenter() pixel.Vec {

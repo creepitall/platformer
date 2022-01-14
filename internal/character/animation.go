@@ -47,12 +47,31 @@ func (a *Animation) ReturnInfo() string {
 	return string(bytes)
 }
 
-func (a *Animation) Update(dt float64) {
+func (a *Animation) Update(dt float64, ctrl pixel.Vec, cs CharacterState) {
 	a.Counter += dt
 
-	i := int(math.Floor(a.Counter / a.Rate))
-	a.Sheet = domain.HeroPlayerStayAssets
-	a.Frame = domain.HeroPlayerStayFrames[i%len(domain.HeroPlayerStayFrames)]
+	switch cs {
+	case CharStateStay:
+		i := int(math.Floor(a.Counter / a.Rate))
+		a.Sheet = domain.HeroPlayerStayAssets
+		a.Frame = domain.HeroPlayerStayFrames[i%len(domain.HeroPlayerStayFrames)]
+	case CharStateRun:
+		i := int(math.Floor(a.Counter / a.Rate))
+		a.Sheet = domain.HeroPlayerRunAssets
+		a.Frame = domain.HeroPlayerRunFrames[i%len(domain.HeroPlayerRunFrames)]
+	}
+
+	a.changeDir(ctrl)
+}
+
+func (a *Animation) changeDir(ctrl pixel.Vec) {
+	if ctrl.X != 0 {
+		if ctrl.X > 0 {
+			a.Dir = +1
+		} else {
+			a.Dir = -1
+		}
+	}
 }
 
 // rectCenter - центр физической модели объекта

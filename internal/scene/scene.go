@@ -16,16 +16,16 @@ import (
 var (
 	frames = 0
 	second = time.Tick(time.Second)
-	cam    pixel.Matrix
 	scene  Scene
 	char   *character.Character
-	ctrl   pixel.Vec
+	//
+	ctrl pixel.Vec
+	camPos pixel.Vec
 )
 
 type Scene struct {
 	Init         bool   // Сцена загружена
 	CurrentScene string // Имя сцены
-	//DefaultSprites map[string]*pixel.Sprite
 	SceneSprites map[string][]*pixel.Sprite // Спрайты для сцены
 	Test1        *pixel.Sprite              // Передний план сцены (временно так)
 }
@@ -68,14 +68,12 @@ func DrawScene(windows *pixelgl.Window, config *config.Config, last *time.Time) 
 	// Коэф.
 	dt := time.Since(*last).Seconds()
 	*last = time.Now()
-	//log.Printf("loop - dt: %v, last: %v \r\n", dt, last)
 
 	// Камера
-	cam = pixel.IM.Moved(pixel.ZV.Scaled(-1))
-	windows.SetMatrix(cam)
+	cameraMatrix := ReturnMatrix(windows, dt)
+	windows.SetMatrix(cameraMatrix)
 
 	ctrl = pixel.ZV
-
 	checkIO(windows)
 
 	windows.Clear(color.White)
