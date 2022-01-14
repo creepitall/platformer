@@ -6,6 +6,7 @@ import (
 	"github.com/creepitall/platformer/internal/domain"
 	"github.com/creepitall/platformer/internal/image"
 	"github.com/creepitall/platformer/internal/pkg/config"
+	"github.com/creepitall/platformer/internal/worldmap"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"image/color"
@@ -27,6 +28,7 @@ type Scene struct {
 	Init         bool   // Сцена загружена
 	CurrentScene string // Имя сцены
 	SceneSprites map[string][]*pixel.Sprite // Спрайты для сцены
+	PlatformPhysics []pixel.Rect
 	Test1        *pixel.Sprite              // Передний план сцены (временно так)
 }
 
@@ -58,6 +60,7 @@ func DrawScene(windows *pixelgl.Window, config *config.Config, last *time.Time) 
 	if !scene.Init {
 		InitCharacter()
 		scene.InitScene()
+		scene.InitSceneObjects()
 	}
 
 	// Ограничение FPS
@@ -79,7 +82,7 @@ func DrawScene(windows *pixelgl.Window, config *config.Config, last *time.Time) 
 	windows.Clear(color.White)
 
 	scene.Draw(windows)
-	char.Update(windows, dt, ctrl)
+	char.Update(windows, dt, ctrl, scene.PlatformPhysics)
 
 	windows.Update()
 
@@ -96,8 +99,8 @@ func DrawScene(windows *pixelgl.Window, config *config.Config, last *time.Time) 
 
 }
 
+// Инициализация персонажа
 func InitCharacter() {
-	// Грузим персонажа
 	ph := character.CreateNewPhysics(196, 300, pixel.R(32, 64, 96, 128), pixel.Vec{})
 
 	image.FillHeroPlayerSprite()
@@ -116,6 +119,20 @@ func (s *Scene) InitScene() {
 	scene.Test1 = scene.SceneSprites["front"][0]
 
 	scene.Init = true
+}
+
+func (s *Scene) InitSceneObjects() {
+	value := worldmap.CreateNewMap()
+
+	s.PlatformPhysics = make([]pixel.Rect, 0, len(value))
+	for _, vl := range value {
+		rc := pixel.Rect{
+			Min: pixel.V(vl.Min.X, vl.Min.Y),
+			Max: pixel.V(vl.Max.X, vl.Max.Y),
+		}
+
+		s.PlatformPhysics = append(s.PlatformPhysics, rc)
+	}
 }
 
 // Отрисовка сцены

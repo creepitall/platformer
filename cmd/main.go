@@ -5,7 +5,6 @@ import (
 	"github.com/creepitall/platformer/internal/domain"
 	envConfig "github.com/creepitall/platformer/internal/pkg/config"
 	"github.com/creepitall/platformer/internal/scene"
-	"github.com/creepitall/platformer/internal/worldmap"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font/basicfont"
 	_ "image/png"
@@ -60,7 +59,7 @@ var CurrentHeroPhysics *heroPhys
 
 var CurrentHeroAnimation *heroAnim
 
-var CurrentPlatformPhys []pixel.Rect
+//var CurrentPlatformPhys []pixel.Rect
 
 type screenLogger struct {
 	bt       *text.Text
@@ -244,12 +243,12 @@ func (sc *screenLogger) drawText(win *pixelgl.Window, cam pixel.Matrix) {
 
 	sc.bt.Draw(win, pixel.IM.Scaled(sc.bt.Orig, 1))
 
-	for _, platform := range CurrentPlatformPhys {
-		sc.bt = text.New(platform.Min, sc.ba)
-		sc.bt.Color = colornames.Pink
-		fmt.Fprintf(sc.bt, platform.String())
-		sc.bt.Draw(win, pixel.IM.Scaled(sc.bt.Orig, 1))
-	}
+	//for _, platform := range CurrentPlatformPhys {
+	//	sc.bt = text.New(platform.Min, sc.ba)
+	//	sc.bt.Color = colornames.Pink
+	//	fmt.Fprintf(sc.bt, platform.String())
+	//	sc.bt.Draw(win, pixel.IM.Scaled(sc.bt.Orig, 1))
+	//}
 }
 
 func (sc *screenLogger) drawCanvas(win *pixelgl.Window) {
@@ -257,14 +256,14 @@ func (sc *screenLogger) drawCanvas(win *pixelgl.Window) {
 }
 
 func (sc *screenLogger) initCanvas() {
-	for _, p := range CurrentPlatformPhys {
-		sc.canvas.Color = colornames.Orange
-		sc.canvas.EndShape = imdraw.RoundEndShape
-		//imd.Push(pixel.V(0, 64), pixel.V(320, 64))
-		sc.canvas.Push(p.Min, p.Max)
-		sc.canvas.Rectangle(1)
-		sc.canvas.Line(2)
-	}
+	//for _, p := range CurrentPlatformPhys {
+	//	sc.canvas.Color = colornames.Orange
+	//	sc.canvas.EndShape = imdraw.RoundEndShape
+	//	//imd.Push(pixel.V(0, 64), pixel.V(320, 64))
+	//	sc.canvas.Push(p.Min, p.Max)
+	//	sc.canvas.Rectangle(1)
+	//	sc.canvas.Line(2)
+	//}
 }
 
 func main() {
@@ -278,25 +277,25 @@ func main() {
 	log.SetOutput(f)
 
 	//initGameConfig()
-	initPhysObjects()
+	//initPhysObjects()
 	//initHeroPlayer()
 	pixelgl.Run(run)
 }
 
-func initPhysObjects() {
-	value := worldmap.CreateNewMap()
-
-	CurrentPlatformPhys = make([]pixel.Rect, 0)
-	for _, vl := range value {
-		rc := pixel.Rect{
-			Min: pixel.V(vl.Min.X, vl.Min.Y),
-			Max: pixel.V(vl.Max.X, vl.Max.Y),
-		}
-
-		CurrentPlatformPhys = append(CurrentPlatformPhys, rc)
-	}
-
-}
+//func initPhysObjects() {
+//	value := worldmap.CreateNewMap()
+//
+//	CurrentPlatformPhys = make([]pixel.Rect, 0)
+//	for _, vl := range value {
+//		rc := pixel.Rect{
+//			Min: pixel.V(vl.Min.X, vl.Min.Y),
+//			Max: pixel.V(vl.Max.X, vl.Max.Y),
+//		}
+//
+//		CurrentPlatformPhys = append(CurrentPlatformPhys, rc)
+//	}
+//
+//}
 
 func initHeroPlayer() {
 	CurrentHeroPhysics = &heroPhys{
@@ -327,93 +326,93 @@ func (hp *heroPhys) changeCameraValue(win *pixelgl.Window) {
 	hp.camera.Y -= (win.Bounds().H() / 2)
 }
 
-func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
-	// apply controls
-	//var sideRight bool
-	switch {
-	case ctrl.X < 0:
-		//	sideRight = false
-		hp.vel.X = -hp.runSpeed
-	case ctrl.X > 0:
-		//	sideRight = true
-		hp.vel.X = +hp.runSpeed
-	default:
-		hp.vel.X = 0
-	}
-	// platform --
-	//hp.ground = false
-
-	hp.vel.Y += hp.gravity * dt
-	//if !hp.isWall {
-	hp.rect = hp.rect.Moved(hp.vel.Scaled(dt))
-	//}
-
-	hp.ground = false
-	//hp.isWall = false
-	if hp.vel.Y <= 0 {
-		//if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 265 && hp.rect.Min.Y >= 32 {
-		// if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 2880 && hp.rect.Min.Y >= 32 {
-		// 	hp.ground = true
-		// }
-
-		avrX := (hp.rect.Max.X + hp.rect.Min.X) / 2
-		for _, platform := range CurrentPlatformPhys {
-			if avrX <= platform.Min.X || avrX >= platform.Max.X {
-				continue
-			}
-			if hp.rect.Min.Y >= platform.Min.Y {
-				continue
-			}
-			hp.vel.Y = 0
-			//hp.rect = hp.rect.Moved(pixel.V(0, platform.Max.Y-platform.Min.Y))
-			hp.rect = hp.rect.Moved(pixel.V(0, platform.Min.Y-hp.rect.Min.Y))
-			hp.ground = true
-			hp.isJump = false
-		}
-
-		//
-		//avrY := hp.rect.Min.Y
-		// for _, platform := range CurrentPlatformPhys {
-		// 	if hp.rect.Max.X > platform.Min.X && hp.rect.Min.Y < platform.Min.Y/2 {
-		// 		hp.isWall = true
-		// 		break
-		// 	}
-		// 	hp.isWall = false
-		// 	// if avrX < platform.Min.X && avrX > platform.Max.X {
-		// 	// 	continue
-		// 	// }
-
-		// 	// if hp.rect.Min.Y < (platform.Min.Y/2)-1 {
-		// 	// 	continue
-		// 	// }
-
-		// 	// // if avrY >= (platform.Min.Y / 2) {
-		// 	// hp.ground = true
-		// 	// } else {
-		// 	// 	hp.ground = false
-		// 	// 	break
-		// 	// }
-		// }
-
-		// if hp.ground {
-		// 	if hp.rect.Max.Y < 128 {
-		// 		hp.rect = hp.rect.Moved(pixel.V(0, 64-hp.rect.Min.Y))
-		// 		hp.vel.Y = 0
-
-		// 	}
-		// }
-	}
-
-	if !hp.isJump && ctrl.Y > 0 {
-		hp.vel.Y = hp.jumpSpeed
-		hp.isJump = true
-	}
-
-	if hp.rect.Max.Y < 0 {
-		hp.isDeath = true
-	}
-
-}
+//func (hp *heroPhys) update(dt float64, ctrl pixel.Vec) {
+//	// apply controls
+//	//var sideRight bool
+//	switch {
+//	case ctrl.X < 0:
+//		//	sideRight = false
+//		hp.vel.X = -hp.runSpeed
+//	case ctrl.X > 0:
+//		//	sideRight = true
+//		hp.vel.X = +hp.runSpeed
+//	default:
+//		hp.vel.X = 0
+//	}
+//	// platform --
+//	//hp.ground = false
+//
+//	hp.vel.Y += hp.gravity * dt
+//	//if !hp.isWall {
+//	hp.rect = hp.rect.Moved(hp.vel.Scaled(dt))
+//	//}
+//
+//	hp.ground = false
+//	//hp.isWall = false
+//	if hp.vel.Y <= 0 {
+//		//if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 265 && hp.rect.Min.Y >= 32 {
+//		// if ((hp.rect.Max.X+hp.rect.Min.X)/2) <= 2880 && hp.rect.Min.Y >= 32 {
+//		// 	hp.ground = true
+//		// }
+//
+//		avrX := (hp.rect.Max.X + hp.rect.Min.X) / 2
+//		for _, platform := range CurrentPlatformPhys {
+//			if avrX <= platform.Min.X || avrX >= platform.Max.X {
+//				continue
+//			}
+//			if hp.rect.Min.Y >= platform.Min.Y {
+//				continue
+//			}
+//			hp.vel.Y = 0
+//			//hp.rect = hp.rect.Moved(pixel.V(0, platform.Max.Y-platform.Min.Y))
+//			hp.rect = hp.rect.Moved(pixel.V(0, platform.Min.Y-hp.rect.Min.Y))
+//			hp.ground = true
+//			hp.isJump = false
+//		}
+//
+//		//
+//		//avrY := hp.rect.Min.Y
+//		// for _, platform := range CurrentPlatformPhys {
+//		// 	if hp.rect.Max.X > platform.Min.X && hp.rect.Min.Y < platform.Min.Y/2 {
+//		// 		hp.isWall = true
+//		// 		break
+//		// 	}
+//		// 	hp.isWall = false
+//		// 	// if avrX < platform.Min.X && avrX > platform.Max.X {
+//		// 	// 	continue
+//		// 	// }
+//
+//		// 	// if hp.rect.Min.Y < (platform.Min.Y/2)-1 {
+//		// 	// 	continue
+//		// 	// }
+//
+//		// 	// // if avrY >= (platform.Min.Y / 2) {
+//		// 	// hp.ground = true
+//		// 	// } else {
+//		// 	// 	hp.ground = false
+//		// 	// 	break
+//		// 	// }
+//		// }
+//
+//		// if hp.ground {
+//		// 	if hp.rect.Max.Y < 128 {
+//		// 		hp.rect = hp.rect.Moved(pixel.V(0, 64-hp.rect.Min.Y))
+//		// 		hp.vel.Y = 0
+//
+//		// 	}
+//		// }
+//	}
+//
+//	if !hp.isJump && ctrl.Y > 0 {
+//		hp.vel.Y = hp.jumpSpeed
+//		hp.isJump = true
+//	}
+//
+//	if hp.rect.Max.Y < 0 {
+//		hp.isDeath = true
+//	}
+//
+//}
 
 func (ha *heroAnim) update(dt float64, phys *heroPhys) {
 	ha.counter += dt

@@ -2,6 +2,7 @@ package character
 
 import (
 	"encoding/json"
+	"github.com/creepitall/platformer/internal/domain"
 	"github.com/faiface/pixel"
 )
 
@@ -58,15 +59,18 @@ func (p *Physics) Validate(ctrl *pixel.Vec) *pixel.Vec {
 }
 
 
-func (p *Physics) Update(dt float64, ctrl *pixel.Vec) float64 {
+func (p *Physics) Update(dt float64, ctrl *pixel.Vec, platform []pixel.Rect) CharacterState {
+	var cs = CharStateStay
 	ctrl = p.Validate(ctrl)
-	p.updateSideX(dt, ctrl)
 
-	return p.Velocity.Len()
+	cs = p.updateSideX(dt, ctrl)
+	cs = p.updateSideY(dt, ctrl, platform)
+
+	return cs
 }
 
 // Обновить физические данные движения по X
-func (p *Physics) updateSideX(dt float64, ctrl *pixel.Vec) {
+func (p *Physics) updateSideX(dt float64, ctrl *pixel.Vec) CharacterState {
 	switch {
 	case ctrl.X < 0:
 		p.Velocity.X = -p.RunSpeed
@@ -77,6 +81,36 @@ func (p *Physics) updateSideX(dt float64, ctrl *pixel.Vec) {
 	}
 
 	p.Rectangle = p.Rectangle.Moved(p.Velocity.Scaled(dt))
+
+	if p.Velocity.Len() > 0 {
+		return CharStateRun
+	}
+	return CharStateStay
+}
+
+func (p *Physics) updateSideY(dt float64, ctrl *pixel.Vec, platforms []pixel.Rect) CharacterState {
+	p.Velocity.Y += domain.GlobalGravity * dt
+
+	if p.Velocity.Y <= 0 {
+		avrX := p.ReturnRectangleSumX() / 2
+		for _, platform := range platforms {
+			if avrX <= platform.Min.X || avrX >= platform.Max.X {
+				continue
+			}
+			if p.Rectangle.Min.Y >= platform.Min.Y {
+				continue
+			}
+			p.Velocity.Y = 0
+			p.Rectangle = p.Rectangle.Moved(pixel.V(0, platform.Min.Y-p.Rectangle.Min.Y))
+			//hp.isJump = false
+		}
+	}
+	if ctrl.Y > 0 {
+		p.Velocity.Y = p.JumpSpeed
+		//hp.isJump = true
+		return CharStateJump
+	}
+	return CharStateStay
 }
 
 func (p *Physics) ReturnRectangleW() float64 {

@@ -20,4 +20,7 @@ func checkIO(windows *pixelgl.Window) {
 	if windows.Pressed(pixelgl.KeyRight) {
 		ctrl.X++
 	}
+	if windows.JustPressed(pixelgl.KeyUp) {
+		ctrl.Y = 1
+	}
 }
