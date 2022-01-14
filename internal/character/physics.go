@@ -59,18 +59,15 @@ func (p *Physics) Validate(ctrl *pixel.Vec) *pixel.Vec {
 }
 
 
-func (p *Physics) Update(dt float64, ctrl *pixel.Vec, platform []pixel.Rect) CharacterState {
-	var cs = CharStateStay
+func (p *Physics) Update(dt float64, ctrl *pixel.Vec, cs State, platform []pixel.Rect) {
 	ctrl = p.Validate(ctrl)
 
-	cs = p.updateSideX(dt, ctrl)
-	cs = p.updateSideY(dt, ctrl, platform)
-
-	return cs
+	p.updateSideX(dt, ctrl, cs)
+	p.updateSideY(dt, ctrl, cs, platform)
 }
 
 // Обновить физические данные движения по X
-func (p *Physics) updateSideX(dt float64, ctrl *pixel.Vec) CharacterState {
+func (p *Physics) updateSideX(dt float64, ctrl *pixel.Vec, cs State) {
 	switch {
 	case ctrl.X < 0:
 		p.Velocity.X = -p.RunSpeed
@@ -78,17 +75,17 @@ func (p *Physics) updateSideX(dt float64, ctrl *pixel.Vec) CharacterState {
 		p.Velocity.X = +p.RunSpeed
 	default:
 		p.Velocity.X = 0
+		cs.Update(CharStateRun)
 	}
 
 	p.Rectangle = p.Rectangle.Moved(p.Velocity.Scaled(dt))
 
 	if p.Velocity.Len() > 0 {
-		return CharStateRun
+		cs.Update(CharStateRun)
 	}
-	return CharStateStay
 }
 
-func (p *Physics) updateSideY(dt float64, ctrl *pixel.Vec, platforms []pixel.Rect) CharacterState {
+func (p *Physics) updateSideY(dt float64, ctrl *pixel.Vec, cs State, platforms []pixel.Rect) {
 	p.Velocity.Y += domain.GlobalGravity * dt
 
 	if p.Velocity.Y <= 0 {
@@ -108,9 +105,8 @@ func (p *Physics) updateSideY(dt float64, ctrl *pixel.Vec, platforms []pixel.Rec
 	if ctrl.Y > 0 {
 		p.Velocity.Y = p.JumpSpeed
 		//hp.isJump = true
-		return CharStateJump
+		cs.Update(CharStateJump)
 	}
-	return CharStateStay
 }
 
 func (p *Physics) ReturnRectangleW() float64 {

@@ -6,7 +6,7 @@ import (
 )
 
 type physics interface {
-	Update(dt float64, ctrl *pixel.Vec, platform []pixel.Rect) CharacterState
+	Update(dt float64, ctrl *pixel.Vec, cs State, platform []pixel.Rect)
 	ReturnRectangleSumX() float64
 	ReturnRectangleSumY() float64
 	ReturnRectangleW() float64
@@ -24,8 +24,9 @@ type animation interface {
 }
 
 type state interface {
-	Update(vel float64)
+	Update(characterState CharacterState)
 	ReturnCurrentState() CharacterState
+	ReturnState() State
 }
 
 // Персонаж
@@ -50,11 +51,11 @@ func (c *Character) Update(windows *pixelgl.Window, dt float64, ctrl pixel.Vec, 
 		//velocity float64
 	)
 
-	CharacterState := c.Physics.Update(dt, &ctrl, platform)
+	c.Physics.Update(dt, &ctrl, c.State.ReturnState(), platform)
 
 	//c.State.Update(velocity)
 
-	c.Animation.Update(dt, ctrl, CharacterState)
+	c.Animation.Update(dt, ctrl, c.State.ReturnCurrentState())
 
 	scaleXYVec := pixel.V(
 		c.Physics.ReturnRectangleW()/c.Animation.ReturnFrameW(),

@@ -18,13 +18,40 @@ func CreateNewState() *State {
 	return &State{}
 }
 
-func (s *State) Update(vel float64) {
-	s.CurrentState = CharStateStay
-	if vel != 0 {
-		s.CurrentState = CharStateRun
+func (s *State) Update(characterState CharacterState) {
+	s.CurrentState = characterState
+}
+
+func (c *CharacterState) FromString(value string) CharacterState {
+	switch value{
+	case "Jump":
+		return CharStateJump
+	case "Stay":
+		return CharStateStay
+	case "Run":
+		return CharStateRun
+	default:
+		return CharStateStay
+	}
+}
+
+func (c *CharacterState) ToString(value CharacterState) string {
+	switch value {
+	case CharStateJump:
+		return "Jump"
+	case CharStateStay:
+		return "Stay"
+	case CharStateRun:
+		return "Run"
+	default:
+		return ""
 	}
 }
 
 func (s *State) ReturnCurrentState() CharacterState {
 	return s.CurrentState
+}
+
+func (s *State) ReturnState() State {
+	return State{CurrentState: s.CurrentState}
 }
